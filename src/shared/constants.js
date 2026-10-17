@@ -14,8 +14,8 @@ export const STORAGE_KEYS = {
 };
 
 export const DEFAULT_CONFIG = {
-  MODEL: 'gemini-2.0-flash-lite',
-  FALLBACK_MODEL: 'gemini-1.5-flash',
+  MODEL: 'gemini-flash-lite-latest',
+  FALLBACK_MODEL: 'gemini-flash-latest',
   LANGUAGE: 'en', // 'en' | 'hinglish'
   THEME: 'dark',
   MAX_STEPS: 10,
@@ -24,13 +24,13 @@ export const DEFAULT_CONFIG = {
 
 export const AVAILABLE_MODELS = [
   {
-    id: 'gemini-2.0-flash-lite',
-    name: 'Gemini 2.0 Flash-Lite (Fast, Low Latency - Recommended)',
+    id: 'gemini-flash-lite-latest',
+    name: 'Gemini Flash-Lite Latest (Fast, Ultra-low Latency - Recommended)',
     tier: 'default'
   },
   {
-    id: 'gemini-1.5-flash',
-    name: 'Gemini 1.5 Flash (Multimodal & Deep Reasoning)',
+    id: 'gemini-flash-latest',
+    name: 'Gemini Flash Latest (Multimodal & Deep Reasoning)',
     tier: 'advanced'
   }
 ];

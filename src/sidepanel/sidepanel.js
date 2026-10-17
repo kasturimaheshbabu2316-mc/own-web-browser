@@ -3,6 +3,7 @@
  */
 
 import { STORAGE_KEYS, DEFAULT_CONFIG, IPC_MESSAGES } from '../shared/constants.js';
+import { DEV_CONFIG } from '../shared/env.js';
 
 // DOM Element References
 const elements = {
