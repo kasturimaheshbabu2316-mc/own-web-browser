@@ -1,0 +1,24 @@
+# Environment and secret files
+.env
+.env.*
+src/shared/env.js
+
+# Python Virtual Environment & Caches
+.venv/
+__pycache__/
+*.pyc
+
+# Node / Dependencies
+node_modules/
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+.cursor/
+.idea/
+.vscode/
+
+# Build & Release packages
+dist/
+*.zip
+release/
