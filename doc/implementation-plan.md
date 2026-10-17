@@ -125,9 +125,9 @@ Scaffold the Chrome Manifest V3 foundation and deliver the core content percepti
 
 ### Phase 1 Acceptance Criteria
 
-- [ ] Unpacked extension loads into Chrome with zero manifest warnings.
-- [ ] Side panel opens and retains the user's Gemini API key locally.
-- [ ] Any readable web article generates a structured 3-part summary.
+- [x] Unpacked extension loads into Chrome with zero manifest warnings.
+- [x] Side panel opens and retains the user's Gemini API key locally.
+- [x] Any readable web article generates a structured 3-part summary.
 - [ ] Public YouTube videos produce chapter summaries with functional seek timestamps.
 - [ ] English and Hinglish language switching functions seamlessly.
 
