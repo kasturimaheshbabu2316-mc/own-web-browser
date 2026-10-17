@@ -4,6 +4,10 @@
 
 import { STORAGE_KEYS, DEFAULT_CONFIG, IPC_MESSAGES } from '../shared/constants.js';
 import { DEV_CONFIG } from '../shared/env.js';
+import { SummaryView } from './components/summary-view.js';
+
+// Component References
+let summaryView = null;
 
 // DOM Element References
 const elements = {
@@ -46,8 +50,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   console.log('[Sahayak SidePanel] Initializing controller...');
   initNavigation();
   initSettingsListeners();
+  initSubComponents();
   await loadSavedSettings();
 });
+
+/**
+ * Initializes sub-views (SummaryView, etc.)
+ */
+function initSubComponents() {
+  const summaryContainer = document.getElementById('view-summary');
+  if (summaryContainer) {
+    summaryView = new SummaryView({
+      container: summaryContainer,
+      onNavigateToSettings: () => switchTab('settings')
+    });
+  }
+}
 
 /**
  * Initializes Tab Navigation
@@ -77,6 +95,10 @@ function switchTab(tabName) {
     const isTarget = pane.id === `view-${tabName}`;
     pane.classList.toggle('active', isTarget);
   });
+
+  if (tabName === 'summary' && summaryView) {
+    summaryView.refreshActiveTabInfo();
+  }
 }
 
 /**
@@ -124,16 +146,21 @@ function initSettingsListeners() {
  */
 async function loadSavedSettings() {
   try {
-    const data = await chrome.storage.local.get([
-      STORAGE_KEYS.GEMINI_API_KEY,
-      STORAGE_KEYS.DEFAULT_MODEL,
-      STORAGE_KEYS.LANGUAGE
-    ]);
+    let data = {};
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      data = await chrome.storage.local.get([
+        STORAGE_KEYS.GEMINI_API_KEY,
+        STORAGE_KEYS.DEFAULT_MODEL,
+        STORAGE_KEYS.LANGUAGE
+      ]);
+    }
 
     let apiKey = data[STORAGE_KEYS.GEMINI_API_KEY] || '';
     if (!apiKey && DEV_CONFIG && DEV_CONFIG.GEMINI_API_KEY) {
       apiKey = DEV_CONFIG.GEMINI_API_KEY.trim();
-      await chrome.storage.local.set({ [STORAGE_KEYS.GEMINI_API_KEY]: apiKey });
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.set({ [STORAGE_KEYS.GEMINI_API_KEY]: apiKey });
+      }
       console.log('[Sahayak SidePanel] Automatically preloaded API key from local environment.');
     }
 
@@ -149,6 +176,11 @@ async function loadSavedSettings() {
     // Update Header indicators
     updateLanguageUI(appState.language);
     updateStatusPill(Boolean(appState.apiKey));
+
+    // If API key is configured, land directly on Summary tab
+    if (appState.apiKey) {
+      switchTab('summary');
+    }
 
     console.log('[Sahayak SidePanel] Settings loaded successfully.');
   } catch (error) {

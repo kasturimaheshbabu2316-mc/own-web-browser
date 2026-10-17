@@ -40,7 +40,7 @@
 
     <!-- Navigation Tabs -->
     <nav class="nav-tabs" role="tablist">
-      <button type="button" class="nav-tab" data-tab="summary" role="tab" id="tab-summary">
+      <button type="button" class="nav-tab active" data-tab="summary" role="tab" id="tab-summary">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
           <polyline points="14 2 14 8 20 8"/>
@@ -66,7 +66,7 @@
         <span>Agent</span>
       </button>
 
-      <button type="button" class="nav-tab active" data-tab="settings" role="tab" id="tab-settings">
+      <button type="button" class="nav-tab" data-tab="settings" role="tab" id="tab-settings">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3"/>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
@@ -78,13 +78,142 @@
     <!-- Main Content Area -->
     <main class="tab-content-container">
 
-      <!-- Summary Tab View Placeholder -->
-      <section id="view-summary" class="tab-pane" role="tabpanel">
-        <div class="placeholder-card">
-          <div class="placeholder-icon">📄</div>
-          <h2>Article &amp; YouTube Summaries</h2>
-          <p>Extracts core insights, TL;DR, and actionable next steps from any web page or YouTube video.</p>
-          <div class="placeholder-hint">Configured in upcoming Slice 1.3 &amp; 1.4</div>
+      <!-- Summary Tab View -->
+      <section id="view-summary" class="tab-pane active" role="tabpanel">
+        <div class="summary-container">
+          <!-- Active Tab Context Header -->
+          <div class="tab-context-banner" id="summary-tab-banner">
+            <div class="tab-context-info">
+              <span class="tab-context-favicon" id="tab-favicon">🌐</span>
+              <div class="tab-context-details">
+                <span class="tab-context-title" id="tab-title">Detecting active tab...</span>
+                <span class="tab-context-url" id="tab-url">Checking address...</span>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary" id="btn-summarize-page">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+              </svg>
+              <span id="btn-summarize-text">Summarize Page</span>
+            </button>
+          </div>
+
+          <!-- Notification / Warning Alerts -->
+          <div class="alert-banner hidden" id="summary-alert">
+            <span class="alert-icon"></span>
+            <span class="alert-text"></span>
+          </div>
+
+          <!-- Extraction Progress Indicator -->
+          <div class="extraction-status-card hidden" id="extraction-status">
+            <div class="spinner-sm"></div>
+            <span id="extraction-status-text">Cloning DOM and running Mozilla Readability...</span>
+          </div>
+
+          <!-- Article Metadata Bar -->
+          <div class="article-meta-bar hidden" id="article-meta-bar">
+            <div class="meta-badge-group">
+              <span class="meta-badge" id="badge-word-count">0 words</span>
+              <span class="meta-badge" id="badge-reading-time">~1 min read</span>
+              <span class="meta-badge" id="badge-latency">0ms</span>
+              <span class="meta-badge meta-badge-accent" id="badge-model">Flash-Lite</span>
+            </div>
+            <div class="meta-action-group">
+              <button type="button" class="icon-text-btn" id="btn-copy-summary" title="Copy formatted summary to clipboard">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                <span id="copy-summary-label">Copy</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Empty State / Welcome Card -->
+          <div class="summary-empty-state" id="summary-empty-state">
+            <div class="empty-icon-wrap">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+                <polyline points="10 9 9 9 8 9"/>
+              </svg>
+            </div>
+            <h3>Structured Article Summarizer</h3>
+            <p>Extracts noise-free article text with Mozilla Readability, stripping ads, popups, and navs. Delivers:</p>
+            <div class="features-pill-list">
+              <div class="feature-item">
+                <span class="feature-bullet">📌</span>
+                <strong>TL;DR:</strong> 1–2 crisp, core summary sentences
+              </div>
+              <div class="feature-item">
+                <span class="feature-bullet">💡</span>
+                <strong>Key Insights:</strong> Exactly 5 distilled takeaways
+              </div>
+              <div class="feature-item">
+                <span class="feature-bullet">🚀</span>
+                <strong>Next Steps:</strong> 2–3 actionable recommendations
+              </div>
+            </div>
+            <div class="empty-cta-hint">Click <strong>"Summarize Page"</strong> above to analyze the current browser tab.</div>
+          </div>
+
+          <!-- Structured Summary Cards Container -->
+          <div class="structured-summary-wrap hidden" id="structured-summary-wrap">
+
+            <!-- Section 1: TL;DR Card -->
+            <div class="summary-section-card tldr-card">
+              <div class="card-section-header">
+                <span class="section-emoji">📌</span>
+                <h3 class="section-heading">TL;DR</h3>
+              </div>
+              <div class="section-body" id="section-tldr-content">
+                <div class="streaming-skeleton-line"></div>
+                <div class="streaming-skeleton-line short"></div>
+              </div>
+            </div>
+
+            <!-- Section 2: Key Insights Card -->
+            <div class="summary-section-card insights-card">
+              <div class="card-section-header">
+                <span class="section-emoji">💡</span>
+                <h3 class="section-heading">Key Insights</h3>
+                <span class="badge-count" id="insights-count-badge">5 Points</span>
+              </div>
+              <div class="section-body" id="section-insights-content">
+                <ul class="insights-list" id="insights-list-el">
+                  <li class="streaming-skeleton-line"></li>
+                  <li class="streaming-skeleton-line"></li>
+                  <li class="streaming-skeleton-line short"></li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Section 3: Next Steps Card -->
+            <div class="summary-section-card next-steps-card">
+              <div class="card-section-header">
+                <span class="section-emoji">🚀</span>
+                <h3 class="section-heading">Next Steps &amp; Actionable Takeaways</h3>
+              </div>
+              <div class="section-body" id="section-next-steps-content">
+                <ul class="next-steps-list" id="next-steps-list-el">
+                  <li class="streaming-skeleton-line"></li>
+                  <li class="streaming-skeleton-line short"></li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Streaming Live Raw Preview -->
+            <div class="raw-preview-wrapper hidden" id="raw-preview-wrapper">
+              <div class="raw-preview-header">
+                <span>Streaming Live Output</span>
+                <span class="live-pulse"></span>
+              </div>
+              <div class="raw-preview-text" id="raw-preview-text"></div>
+            </div>
+
+          </div>
         </div>
       </section>
 
@@ -108,8 +237,8 @@
         </div>
       </section>
 
-      <!-- Settings Tab View (Active in Slice 1.1) -->
-      <section id="view-settings" class="tab-pane active" role="tabpanel">
+      <!-- Settings Tab View -->
+      <section id="view-settings" class="tab-pane" role="tabpanel">
         <div class="settings-container">
           <div class="section-title-wrap">
             <h2 class="section-title">Settings &amp; AI Credentials</h2>
