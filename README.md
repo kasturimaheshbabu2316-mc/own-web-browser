@@ -2,7 +2,7 @@
 
 [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-blue.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 [![Model](https://img.shields.io/badge/AI%20Model-Gemini%20Flash--Lite-orange.svg)](https://ai.google.dev/)
-[![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local--First-green.svg)](#privacy--security-guarantee)
+[![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local--First-green.svg)](#privacy-and-security-guarantee)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 > **Sahayak (सहायक)** is an intelligent, privacy-first Chrome Side-Panel AI assistant designed to read, understand, and interact with the web alongside you. Powered by Google Gemini Flash-Lite and Mozilla Readability, it transforms complex web pages into structured insights, supports natural English & Hinglish communication, and follows a strict **Human-in-the-Loop (HITL)** architecture.
@@ -11,7 +11,7 @@
 
 ## 🌟 Core Philosophy: The Three Pillars
 
-```
+```text
        ┌─────────────────────────────────────────────────────────────┐
        │                 SAHAYAK ARCHITECTURE PILLARS               │
        └─────────────────────────────────────────────────────────────┘
@@ -147,7 +147,8 @@ cd own-web-browser
 
 ---
 
-## 🔒 Privacy & Security Guarantee
+<a id="privacy-and-security-guarantee"></a>
+## Privacy and Security Guarantee
 
 * **100% Local-First Storage**: API keys and preferences are stored exclusively on your device using `chrome.storage.local`.
 * **Zero Middleman Servers**: Requests go directly from your browser to Google's official Gemini endpoint. There is no telemetry, tracking, or proxy server.
