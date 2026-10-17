@@ -147,8 +147,6 @@ cd own-web-browser
 
 ---
 
-<a id="privacy-and-security-guarantee"></a>
-
 ## Privacy and Security Guarantee
 
 * **100% Local-First Storage**: API keys and preferences are stored exclusively on your device using `chrome.storage.local`.
