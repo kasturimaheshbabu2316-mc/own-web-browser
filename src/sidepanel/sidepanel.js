@@ -130,7 +130,14 @@ async function loadSavedSettings() {
       STORAGE_KEYS.LANGUAGE
     ]);
 
-    appState.apiKey = data[STORAGE_KEYS.GEMINI_API_KEY] || '';
+    let apiKey = data[STORAGE_KEYS.GEMINI_API_KEY] || '';
+    if (!apiKey && DEV_CONFIG && DEV_CONFIG.GEMINI_API_KEY) {
+      apiKey = DEV_CONFIG.GEMINI_API_KEY.trim();
+      await chrome.storage.local.set({ [STORAGE_KEYS.GEMINI_API_KEY]: apiKey });
+      console.log('[Sahayak SidePanel] Automatically preloaded API key from local environment.');
+    }
+
+    appState.apiKey = apiKey;
     appState.defaultModel = data[STORAGE_KEYS.DEFAULT_MODEL] || DEFAULT_CONFIG.MODEL;
     appState.language = data[STORAGE_KEYS.LANGUAGE] || DEFAULT_CONFIG.LANGUAGE;
 

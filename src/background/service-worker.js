@@ -4,6 +4,7 @@
 
 import { STORAGE_KEYS, DEFAULT_CONFIG, IPC_MESSAGES } from '../shared/constants.js';
 import { generateContent, streamGenerateContent } from './ai-orchestrator.js';
+import { DEV_CONFIG } from '../shared/env.js';
 
 // Configure Chrome Side Panel to open automatically when extension action icon is clicked
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -21,12 +22,16 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   // Initialize default configuration in chrome.storage.local if empty
   try {
     const existing = await chrome.storage.local.get([
+      STORAGE_KEYS.GEMINI_API_KEY,
       STORAGE_KEYS.DEFAULT_MODEL,
       STORAGE_KEYS.LANGUAGE,
       STORAGE_KEYS.THEME
     ]);
 
     const defaultsToSet = {};
+    if (!existing[STORAGE_KEYS.GEMINI_API_KEY] && DEV_CONFIG && DEV_CONFIG.GEMINI_API_KEY) {
+      defaultsToSet[STORAGE_KEYS.GEMINI_API_KEY] = DEV_CONFIG.GEMINI_API_KEY.trim();
+    }
     if (!existing[STORAGE_KEYS.DEFAULT_MODEL]) {
       defaultsToSet[STORAGE_KEYS.DEFAULT_MODEL] = DEFAULT_CONFIG.MODEL;
     }
