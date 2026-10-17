@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sahayak - AI Browser Assistant</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a8 8 0 0 0-8 8c0 5 8 12 8 12s8-7 8-12a8 8 0 0 0-8-8z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">Sahayak</h1>
+          <span class="brand-tagline">AI Web Copilot</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Quick Language Toggle -->
+        <button type="button" id="quick-lang-btn" class="pill-btn" title="Toggle English / Hinglish" aria-label="Toggle Language">
+          <span class="lang-icon">🌐</span>
+          <span id="quick-lang-label">EN</span>
+        </button>
+
+        <!-- Status Pill -->
+        <div id="connection-status-pill" class="status-pill status-warning" title="API Key Status">
+          <span class="status-dot"></span>
+          <span id="connection-status-text">Setup Required</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs" role="tablist">
+      <button type="button" class="nav-tab" data-tab="summary" role="tab" id="tab-summary">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14 2 14 8 20 8"/>
+          <line x1="16" y1="13" x2="8" y2="13"/>
+          <line x1="16" y1="17" x2="8" y2="17"/>
+          <polyline points="10 9 9 9 8 9"/>
+        </svg>
+        <span>Summary</span>
+      </button>
+
+      <button type="button" class="nav-tab" data-tab="chat" role="tab" id="tab-chat">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <span>Chat</span>
+      </button>
+
+      <button type="button" class="nav-tab" data-tab="agent" role="tab" id="tab-agent">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polygon points="10 8 16 12 10 16 10 8"/>
+        </svg>
+        <span>Agent</span>
+      </button>
+
+      <button type="button" class="nav-tab active" data-tab="settings" role="tab" id="tab-settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="tab-content-container">
+
+      <!-- Summary Tab View Placeholder -->
+      <section id="view-summary" class="tab-pane" role="tabpanel">
+        <div class="placeholder-card">
+          <div class="placeholder-icon">📄</div>
+          <h2>Article &amp; YouTube Summaries</h2>
+          <p>Extracts core insights, TL;DR, and actionable next steps from any web page or YouTube video.</p>
+          <div class="placeholder-hint">Configured in upcoming Slice 1.3 &amp; 1.4</div>
+        </div>
+      </section>
+
+      <!-- Chat Tab View Placeholder -->
+      <section id="view-chat" class="tab-pane" role="tabpanel">
+        <div class="placeholder-card">
+          <div class="placeholder-icon">💬</div>
+          <h2>Grounded Page Chat</h2>
+          <p>Chat with the current page without hallucinations. Ask questions grounded strictly in the page content.</p>
+          <div class="placeholder-hint">Configured in Phase 2</div>
+        </div>
+      </section>
+
+      <!-- Agent Tab View Placeholder -->
+      <section id="view-agent" class="tab-pane" role="tabpanel">
+        <div class="placeholder-card">
+          <div class="placeholder-icon">🤖</div>
+          <h2>Human-in-the-Loop Browser Agent</h2>
+          <p>Scans interactive elements, visualizes numbered action maps, and performs approved steps with human oversight.</p>
+          <div class="placeholder-hint">Configured in Phase 3</div>
+        </div>
+      </section>
+
+      <!-- Settings Tab View (Active in Slice 1.1) -->
+      <section id="view-settings" class="tab-pane active" role="tabpanel">
+        <div class="settings-container">
+          <div class="section-title-wrap">
+            <h2 class="section-title">Settings &amp; AI Credentials</h2>
+            <p class="section-subtitle">Configure your free Google Gemini API credentials. All keys remain private and stored strictly on your local machine.</p>
+          </div>
+
+          <!-- Alert Banner -->
+          <div id="settings-alert" class="alert-banner hidden">
+            <span class="alert-icon"></span>
+            <span class="alert-text"></span>
+          </div>
+
+          <!-- Gemini API Key Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon">🔑</span>
+                <div>
+                  <h3 class="card-title">Google Gemini API Key</h3>
+                  <p class="card-desc">Required for summarization, reasoning, grounded chat, and agent planning.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <div class="input-group">
+                <label for="gemini-api-key" class="input-label">Gemini API Key</label>
+                <div class="input-password-wrapper">
+                  <input 
+                    type="password" 
+                    id="gemini-api-key" 
+                    class="text-input" 
+                    placeholder="AIzaSy..." 
+                    autocomplete="current-password"
+                    spellcheck="false"
+                  >
+                  <button type="button" id="toggle-key-visibility" class="icon-btn" title="Show/Hide Key" aria-label="Show or hide API key">
+                    <svg id="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="field-hint">
+                  Don't have a key?
+                  <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="link">
+                    Get a free Gemini API key from Google AI Studio ↗
+                  </a>
+                </div>
+              </div>
+
+              <div class="button-row">
+                <button type="button" id="save-settings-btn" class="btn btn-primary">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/>
+                    <polyline points="7 3 7 8 15 8"/>
+                  </svg>
+                  <span>Save Settings</span>
+                </button>
+
+                <button type="button" id="test-key-btn" class="btn btn-secondary">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  <span>Test Connection</span>
+                </button>
+
+                <button type="button" id="clear-key-btn" class="btn btn-ghost" title="Clear saved key">
+                  <span>Clear</span>
+                </button>
+              </div>
+
+              <!-- Live Test Result Output -->
+              <div id="test-result-box" class="test-result-box hidden">
+                <div class="test-result-header">
+                  <span class="test-result-badge">Gemini Flash-Lite Live Response</span>
+                  <span id="test-latency" class="test-latency"></span>
+                </div>
+                <div id="test-result-text" class="test-result-text"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Model & Language Preferences Card -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon">⚙️</span>
+                <div>
+                  <h3 class="card-title">Preferences</h3>
+                  <p class="card-desc">Default AI models and dialect response settings.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <!-- Default Model Selection -->
+              <div class="input-group">
+                <label for="default-model" class="input-label">Default Model</label>
+                <select id="default-model" class="select-input">
+                  <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite (Fast, Low Latency - Recommended)</option>
+                  <option value="gemini-1.5-flash">Gemini 1.5 Flash (Complex Reasoning &amp; Multimodal)</option>
+                </select>
+                <div class="field-hint">Flash-Lite offers the lowest latency and highest free-tier rate limits.</div>
+              </div>
+
+              <!-- Output Language -->
+              <div class="input-group">
+                <label for="language-select" class="input-label">Default Response Language</label>
+                <select id="language-select" class="select-input">
+                  <option value="en">English (Standard)</option>
+                  <option value="hinglish">Hinglish (Colloquial Hindi-English in Latin script)</option>
+                </select>
+                <div class="field-hint">Hinglish mixes conversational Hindi phrases with technical English terms.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Security & Privacy Guarantee Card -->
+          <div class="card card-subtle">
+            <div class="card-title-group">
+              <span class="card-icon">🛡️</span>
+              <div>
+                <h4 class="card-title-sm">100% Local-First Privacy</h4>
+                <p class="card-desc-sm">
+                  Your API keys and browsing activity are stored strictly on your device using <code>chrome.storage.local</code>.
+                  Sahayak has no central tracking server or proxy.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Extension Info Footer -->
+          <footer class="settings-footer">
+            <span>Sahayak v1.0.0</span>
+            <span>•</span>
+            <span>Chrome Manifest V3</span>
+            <span>•</span>
+            <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="link">GitHub</a>
+          </footer>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>
