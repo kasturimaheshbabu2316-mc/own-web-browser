@@ -1323,12 +1323,14 @@ body {
   flex-direction: column;
   gap: 12px;
   scroll-behavior: smooth;
-  scrollbar-width: thin;
-  scrollbar-color: var(--bg-hover) transparent;
 }
 
 .chat-messages-scroll::-webkit-scrollbar {
   width: 6px;
+}
+
+.chat-messages-scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .chat-messages-scroll::-webkit-scrollbar-thumb {
