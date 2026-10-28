@@ -1733,3 +1733,297 @@ body {
   color: var(--text-muted);
   padding: 0 2px;
 }
+
+/* ==========================================================================
+   Slice 2.3: Visual Multimodal Understanding (Capture & Ask / Cropping)
+   ========================================================================== */
+
+/* Input bar attach screenshot icon button */
+.btn-chat-attach {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.btn-chat-attach:hover {
+  background: var(--bg-hover);
+  color: var(--accent-primary);
+  border-color: var(--accent-primary);
+}
+
+.btn-chat-attach.loading {
+  pointer-events: none;
+  opacity: 0.6;
+  animation: pulse 1.2s infinite ease-in-out;
+}
+
+/* Chat Attachment Preview Chip (Above Input Bar) */
+.chat-attachment-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  background: rgba(30, 41, 59, 0.85);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: var(--radius-md);
+  margin-bottom: 4px;
+  backdrop-filter: blur(8px);
+  animation: slideUpFade 0.2s ease-out;
+}
+
+.chat-attachment-preview.hidden {
+  display: none;
+}
+
+.attachment-thumb-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: #000;
+  border: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.attachment-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.attachment-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.attachment-title {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attachment-dim {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-family: 'SF Mono', Consolas, monospace;
+}
+
+.btn-attachment-remove {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-attachment-remove:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* User Message Attached Image Thumbnail */
+.msg-attachment-thumb-wrap {
+  margin-bottom: 8px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #000;
+  max-width: 240px;
+}
+
+.msg-attached-image {
+  width: 100%;
+  max-height: 160px;
+  object-fit: contain;
+  display: block;
+}
+
+/* Coordinate Cropping Modal Overlay */
+.crop-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(3, 7, 18, 0.88);
+  backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+.crop-modal-overlay.hidden {
+  display: none !important;
+}
+
+.crop-modal-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg), 0 0 24px rgba(0, 0, 0, 0.6);
+  animation: cropModalIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cropModalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.crop-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 6px;
+}
+
+.crop-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.crop-modal-title h3 {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.crop-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.crop-close-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.crop-modal-subtitle {
+  font-size: 0.72rem;
+  color: var(--text-secondary);
+  padding: 0 14px 8px;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.crop-modal-subtitle strong {
+  color: var(--text-primary);
+}
+
+/* Crop Stage & Canvas */
+.crop-stage {
+  position: relative;
+  background: #020617;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  margin: 4px 14px 12px;
+}
+
+.crop-canvas {
+  max-width: 100%;
+  max-height: 45vh;
+  display: block;
+  object-fit: contain;
+  cursor: crosshair;
+  user-select: none;
+}
+
+/* Draggable Marquee Selection */
+.crop-marquee {
+  position: absolute;
+  border: 2px dashed #00e5ff;
+  background: rgba(0, 229, 255, 0.15);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.crop-marquee.hidden {
+  display: none !important;
+}
+
+.crop-marquee-label {
+  position: absolute;
+  bottom: -22px;
+  left: 0;
+  background: #00e5ff;
+  color: #020617;
+  font-size: 0.66rem;
+  font-weight: 700;
+  font-family: 'SF Mono', Consolas, monospace;
+  padding: 1px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Crop Modal Footer Actions */
+.crop-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.crop-modal-footer .btn {
+  padding: 6px 12px;
+  font-size: 0.76rem;
+}
+

@@ -23,6 +23,8 @@ const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models
 export async function generateContent({
   prompt,
   contents = null,
+  imageBase64 = null,
+  mimeType = 'image/jpeg',
   systemInstruction = '',
   model = DEFAULT_CONFIG.MODEL,
   apiKey = '',
@@ -39,7 +41,7 @@ export async function generateContent({
   }
 
   const endpoint = `${GEMINI_API_BASE}/${model}:generateContent?key=${resolvedKey.trim()}`;
-  const payload = buildGeminiPayload({ prompt, contents, systemInstruction, temperature, maxOutputTokens });
+  const payload = buildGeminiPayload({ prompt, contents, imageBase64, mimeType, systemInstruction, temperature, maxOutputTokens });
 
   try {
     const response = await fetch(endpoint, {
@@ -106,6 +108,8 @@ export async function generateContent({
 export async function streamGenerateContent({
   prompt,
   contents = null,
+  imageBase64 = null,
+  mimeType = 'image/jpeg',
   systemInstruction = '',
   model = DEFAULT_CONFIG.MODEL,
   apiKey = '',
@@ -122,7 +126,7 @@ export async function streamGenerateContent({
   }
 
   const endpoint = `${GEMINI_API_BASE}/${model}:streamGenerateContent?alt=sse&key=${resolvedKey.trim()}`;
-  const payload = buildGeminiPayload({ prompt, contents, systemInstruction, temperature, maxOutputTokens });
+  const payload = buildGeminiPayload({ prompt, contents, imageBase64, mimeType, systemInstruction, temperature, maxOutputTokens });
 
   try {
     const response = await fetch(endpoint, {
@@ -178,15 +182,41 @@ export async function streamGenerateContent({
 }
 
 /**
- * Builds standard Google Gemini REST payload
+ * Builds standard Google Gemini REST payload with multimodal image support
  */
-function buildGeminiPayload({ prompt, contents = null, systemInstruction, temperature, maxOutputTokens }) {
-  const resolvedContents = contents && contents.length > 0 ? contents : [
-    {
-      role: 'user',
-      parts: [{ text: prompt || '' }]
+function buildGeminiPayload({
+  prompt,
+  contents = null,
+  imageBase64 = null,
+  mimeType = 'image/jpeg',
+  systemInstruction,
+  temperature,
+  maxOutputTokens
+}) {
+  let resolvedContents = contents;
+
+  if (!resolvedContents || resolvedContents.length === 0) {
+    const parts = [];
+
+    // Multimodal image inlineData part (Slice 2.3)
+    if (imageBase64) {
+      const cleanBase64 = imageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, '').trim();
+      parts.push({
+        inlineData: {
+          mimeType,
+          data: cleanBase64
+        }
+      });
     }
-  ];
+
+    if (prompt && prompt.trim() !== '') {
+      parts.push({ text: prompt.trim() });
+    } else if (imageBase64) {
+      parts.push({ text: 'Analyze and explain this image in detail, describing any key text, charts, diagrams, or visual data.' });
+    }
+
+    resolvedContents = [{ role: 'user', parts }];
+  }
 
   const payload = {
     contents: resolvedContents,

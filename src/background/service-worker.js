@@ -109,8 +109,58 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
 
+  // Handle Screenshot Viewport Capture (Slice 2.3)
+  if (message.type === IPC_MESSAGES.CAPTURE_SCREENSHOT) {
+    chrome.tabs.query({ active: true, currentWindow: true })
+      .then(([activeTab]) => {
+        if (!activeTab || !activeTab.id) {
+          sendResponse({ success: false, error: 'No active tab found to capture.' });
+          return;
+        }
+
+        if (isRestrictedUrl(activeTab.url)) {
+          sendResponse({
+            success: false,
+            error: 'Browser system pages (chrome://, settings, webstore) cannot be captured.'
+          });
+          return;
+        }
+
+        chrome.tabs.captureVisibleTab(activeTab.windowId || null, { format: 'jpeg', quality: 85 }, (dataUrl) => {
+          if (chrome.runtime.lastError) {
+            sendResponse({ success: false, error: chrome.runtime.lastError.message });
+          } else if (!dataUrl) {
+            sendResponse({ success: false, error: 'Failed to capture visible tab.' });
+          } else {
+            sendResponse({
+              success: true,
+              dataUrl,
+              tabId: activeTab.id,
+              tabTitle: activeTab.title,
+              tabUrl: activeTab.url
+            });
+          }
+        });
+      })
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
   return false;
 });
+
+// Helper: Tests if URL is a restricted browser internal page
+function isRestrictedUrl(url = '') {
+  if (!url) return true;
+  return (
+    url.startsWith('chrome://') ||
+    url.startsWith('chrome-extension://') ||
+    url.startsWith('edge://') ||
+    url.startsWith('about:') ||
+    url.startsWith('view-source:') ||
+    url.includes('chromewebstore.google.com')
+  );
+}
 
 // Helper: Tests if URL is a YouTube watch or shorts page
 function isYouTubeWatchUrl(url = '') {

@@ -23,8 +23,20 @@ export class ChatView {
       pageContext: null,
       isExtractingContext: false,
       isGenerating: false,
+      isCapturing: false,
       language: DEFAULT_CONFIG.LANGUAGE,
-      messages: [], // Array of { role: 'user' | 'model', text: string, timestamp: number }
+      messages: [], // Array of { role: 'user' | 'model', text: string, imageBase64?: string, timestamp: number }
+      attachedImage: null, // { dataUrl: string, width: number, height: number, isCropped: boolean }
+      cropState: {
+        rawImage: null,
+        dataUrl: '',
+        startX: 0,
+        startY: 0,
+        currentX: 0,
+        currentY: 0,
+        isDragging: false,
+        selection: null
+      },
       activePort: null
     };
 
@@ -136,6 +148,21 @@ export class ChatView {
       tabStatus: this.container.querySelector('#chat-tab-status'),
       btnRefresh: this.container.querySelector('#btn-refresh-context'),
       btnClear: this.container.querySelector('#btn-clear-chat'),
+      btnCaptureHeader: this.container.querySelector('#btn-chat-capture'),
+      btnCaptureInput: this.container.querySelector('#btn-input-capture'),
+      attachmentPreview: this.container.querySelector('#chat-attachment-preview'),
+      attachmentThumb: this.container.querySelector('#attachment-thumb-img'),
+      attachmentTitle: this.container.querySelector('#attachment-title'),
+      attachmentDim: this.container.querySelector('#attachment-dim'),
+      btnRemoveAttachment: this.container.querySelector('#btn-attachment-remove'),
+      cropModal: this.container.querySelector('#crop-modal-overlay'),
+      btnCropClose: this.container.querySelector('#btn-crop-close'),
+      btnCropFull: this.container.querySelector('#btn-crop-full'),
+      btnCropConfirm: this.container.querySelector('#btn-crop-confirm'),
+      cropStage: this.container.querySelector('#crop-stage'),
+      cropCanvas: this.container.querySelector('#crop-canvas'),
+      cropMarquee: this.container.querySelector('#crop-marquee'),
+      cropMarqueeLabel: this.container.querySelector('#crop-marquee-label'),
       alertBanner: this.container.querySelector('#chat-alert'),
       messagesScroll: this.container.querySelector('#chat-messages-container'),
       emptyState: this.container.querySelector('#chat-empty-state'),
@@ -180,6 +207,47 @@ export class ChatView {
     this.dom.btnClear.addEventListener('click', () => {
       this.clearChatHistory();
     });
+
+    // Capture screenshot buttons (Slice 2.3)
+    if (this.dom.btnCaptureHeader) {
+      this.dom.btnCaptureHeader.addEventListener('click', () => {
+        this.triggerCaptureFlow();
+      });
+    }
+    if (this.dom.btnCaptureInput) {
+      this.dom.btnCaptureInput.addEventListener('click', () => {
+        this.triggerCaptureFlow();
+      });
+    }
+
+    // Remove attached screenshot
+    if (this.dom.btnRemoveAttachment) {
+      this.dom.btnRemoveAttachment.addEventListener('click', () => {
+        this.removeAttachedImage();
+      });
+    }
+
+    // Crop Modal buttons
+    if (this.dom.btnCropClose) {
+      this.dom.btnCropClose.addEventListener('click', () => {
+        this.closeCropModal();
+      });
+    }
+    if (this.dom.btnCropFull) {
+      this.dom.btnCropFull.addEventListener('click', () => {
+        this.confirmFullImage();
+      });
+    }
+    if (this.dom.btnCropConfirm) {
+      this.dom.btnCropConfirm.addEventListener('click', () => {
+        this.confirmCroppedImage();
+      });
+    }
+
+    // Interactive canvas marquee cropping listeners (Slice 2.3)
+    if (this.dom.cropStage) {
+      this.bindCropStageEvents();
+    }
 
     // Quick suggestion chips
     this.dom.suggestionsWrap.addEventListener('click', (e) => {
@@ -417,8 +485,15 @@ export class ChatView {
   async handleUserSubmit() {
     if (this.state.isGenerating) return;
 
-    const query = this.dom.chatInput.value.trim();
-    if (!query) return;
+    let query = this.dom.chatInput.value.trim();
+    const attachedImage = this.state.attachedImage;
+
+    // If user attached an image without text, provide a sensible default prompt
+    if (!query && attachedImage) {
+      query = 'Please analyze this screenshot/chart in detail. Explain any key trends, numbers, text, or visual elements.';
+    }
+
+    if (!query && !attachedImage) return;
 
     // Check if API key is configured
     const settings = await chrome.storage.local.get([
@@ -440,8 +515,8 @@ export class ChatView {
     const language = settings[STORAGE_KEYS.LANGUAGE] || this.state.language || DEFAULT_CONFIG.LANGUAGE;
     this.state.language = language;
 
-    // Ensure we have current page context
-    if (!this.state.pageContext) {
+    // Ensure we have current page context if not an image query
+    if (!this.state.pageContext && !attachedImage) {
       await this.refreshPageContext();
       if (!this.state.pageContext) {
         this.showAlert('Could not read page context from active tab. Please ensure you are on a readable webpage.', 'warning');
@@ -454,24 +529,33 @@ export class ChatView {
     this.autoResizeInput();
     this.dom.charCounter.textContent = '0/4000';
 
+    // Remove attached image preview from input bar
+    if (attachedImage) {
+      this.removeAttachedImage();
+    }
+
     // Hide empty state
     this.dom.emptyState.classList.add('hidden');
 
     // Add User Message to UI & history
-    this.appendUserMessage(query);
+    const userBadge = attachedImage ? '📷 Visual Query' : null;
+    this.appendUserMessage(query, userBadge, attachedImage);
     this.state.messages.push({
       role: 'user',
       text: query,
+      imageBase64: attachedImage ? attachedImage.dataUrl : null,
       timestamp: Date.now()
     });
 
     // Create streaming AI response bubble in UI
-    const aiBubble = this.createAiMessageBubble();
+    const aiBadge = attachedImage ? '📷 Visual Reasoning' : '📌 Grounded in Page';
+    const aiBubble = this.createAiMessageBubble(aiBadge);
     this.scrollToBottom();
 
-    // Generate grounded response
+    // Generate grounded or visual response
     await this.streamGroundedReply({
       query,
+      attachedImage,
       aiBubble,
       apiKey,
       model,
@@ -482,11 +566,20 @@ export class ChatView {
   /**
    * Streams grounded conversational reply from Gemini
    */
-  async streamGroundedReply({ query, aiBubble, apiKey, model, language }) {
+  async streamGroundedReply({ query, attachedImage = null, aiBubble, apiKey, model, language }) {
     this.state.isGenerating = true;
     this.setSendBtnLoading(true);
 
-    const systemInstruction = this.buildGroundedSystemInstruction(language);
+    const systemInstruction = attachedImage
+      ? (language === 'hinglish'
+          ? `You are Sahayak Visual Assistant. The user provided an attached image/screenshot of a webpage, chart, diagram, or error dialog.
+Explain and analyze the visual details in natural, conversational Hinglish (Hindi written in Latin script, keeping English technical terms).
+Identify any charts, trends, axes, numbers, error codes, and practical takeaways clearly.`
+          : `You are Sahayak Visual Assistant. The user provided an attached screenshot of a webpage, chart, diagram, or error dialog.
+Carefully analyze the visual information. Describe the key trends, data points, labels, axes, numbers, errors, or UI elements shown.
+Be precise, structured, and helpful.`)
+      : this.buildGroundedSystemInstruction(language);
+
     const contents = this.buildTurnContents();
 
     try {
@@ -534,7 +627,7 @@ export class ChatView {
           systemInstruction,
           model,
           apiKey,
-          temperature: 0.2, // Low temperature for maximum grounding & zero hallucinations
+          temperature: attachedImage ? 0.3 : 0.2,
           maxOutputTokens: 2048
         }
       });
@@ -592,30 +685,42 @@ RULES:
    * Injects XML-delimited page context into the initial user prompt turn.
    */
   buildTurnContents() {
-    const contextHeader = `<<<PAGE_CONTEXT>>>
+    const contextHeader = this.state.pageContext ? `<<<PAGE_CONTEXT>>>
 Page Title: ${this.state.pageContext.title}
 Source URL: ${this.state.pageContext.url}
 Site: ${this.state.pageContext.siteName}
 
 ${this.state.pageContext.textContent}
-<<<END_PAGE_CONTEXT>>>`;
+<<<END_PAGE_CONTEXT>>>` : '';
 
     const contents = [];
 
     // Loop through existing history
     this.state.messages.forEach((msg, index) => {
-      if (index === 0 && msg.role === 'user') {
-        // First user query is bundled with the grounded page context
-        contents.push({
-          role: 'user',
-          parts: [{ text: `${contextHeader}\n\nQuestion: ${msg.text}` }]
-        });
-      } else {
-        contents.push({
-          role: msg.role === 'assistant' ? 'model' : msg.role,
-          parts: [{ text: msg.text }]
+      const parts = [];
+
+      // Multimodal image part
+      if (msg.imageBase64) {
+        const cleanBase64 = msg.imageBase64.replace(/^data:image\/[a-zA-Z]+;base64,/, '').trim();
+        parts.push({
+          inlineData: {
+            mimeType: 'image/jpeg',
+            data: cleanBase64
+          }
         });
       }
+
+      if (index === 0 && msg.role === 'user') {
+        const fullText = contextHeader ? `${contextHeader}\n\nQuestion: ${msg.text}` : msg.text;
+        parts.push({ text: fullText });
+      } else {
+        parts.push({ text: msg.text });
+      }
+
+      contents.push({
+        role: msg.role === 'assistant' ? 'model' : msg.role,
+        parts
+      });
     });
 
     return contents;
@@ -624,15 +729,20 @@ ${this.state.pageContext.textContent}
   /**
    * Appends User Bubble to message thread
    * @param {string} text 
-   * @param {string} [actionBadge] - Optional action pill label (e.g., "⚡ Explain Selection")
+   * @param {string} [actionBadge] - Optional action pill label
+   * @param {object} [attachedImage] - Optional attached screenshot { dataUrl }
    */
-  appendUserMessage(text, actionBadge = null) {
+  appendUserMessage(text, actionBadge = null, attachedImage = null) {
     const timeStr = this.formatTimestamp(Date.now());
     const msgEl = document.createElement('div');
     msgEl.className = 'chat-msg chat-msg-user';
     msgEl.innerHTML = `
       <div class="msg-bubble user-bubble">
         ${actionBadge ? `<div class="msg-action-pill">${this.escapeHTML(actionBadge)}</div>` : ''}
+        ${attachedImage ? `
+          <div class="msg-attachment-thumb-wrap">
+            <img src="${attachedImage.dataUrl}" class="msg-attached-image" alt="Attached screenshot" />
+          </div>` : ''}
         <div class="msg-text">${this.escapeHTML(text)}</div>
         <div class="msg-meta">${timeStr}</div>
       </div>
@@ -975,5 +1085,323 @@ ${text}
     html = html.replace(/\n/g, '<br>');
 
     return html;
+  }
+
+  /**
+   * Triggers the capture of the visible tab screenshot (Slice 2.3)
+   */
+  async triggerCaptureFlow() {
+    if (this.state.isCapturing) return;
+    this.state.isCapturing = true;
+
+    try {
+      if (this.dom.btnCaptureHeader) this.dom.btnCaptureHeader.classList.add('loading');
+      if (this.dom.btnCaptureInput) this.dom.btnCaptureInput.classList.add('loading');
+
+      const response = await chrome.runtime.sendMessage({
+        type: IPC_MESSAGES.CAPTURE_SCREENSHOT
+      });
+
+      if (!response || !response.success) {
+        const errorMsg = response?.error || 'Failed to capture screenshot. Make sure you are on an active webpage.';
+        this.showAlert(errorMsg, 'error');
+        return;
+      }
+
+      this.openCropModal(response.dataUrl);
+
+    } catch (err) {
+      console.error('[ChatView] Capture error:', err);
+      this.showAlert(`Screenshot error: ${err.message}`, 'error');
+    } finally {
+      this.state.isCapturing = false;
+      if (this.dom.btnCaptureHeader) this.dom.btnCaptureHeader.classList.remove('loading');
+      if (this.dom.btnCaptureInput) this.dom.btnCaptureInput.classList.remove('loading');
+    }
+  }
+
+  /**
+   * Opens coordinate cropping modal overlay
+   * @param {string} dataUrl - Full tab screenshot data URL
+   */
+  openCropModal(dataUrl) {
+    if (!this.dom.cropModal || !this.dom.cropCanvas) return;
+
+    const img = new Image();
+    img.onload = () => {
+      this.state.cropState.rawImage = img;
+      this.state.cropState.dataUrl = dataUrl;
+
+      const canvas = this.dom.cropCanvas;
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0);
+
+      if (this.dom.cropMarquee) {
+        this.dom.cropMarquee.classList.add('hidden');
+      }
+      if (this.dom.btnCropConfirm) {
+        this.dom.btnCropConfirm.disabled = true;
+      }
+      this.state.cropState.selection = null;
+
+      this.dom.cropModal.classList.remove('hidden');
+    };
+    img.onerror = (e) => {
+      console.error('[ChatView] Image load error:', e);
+      this.showAlert('Could not load captured screenshot.', 'error');
+    };
+    img.src = dataUrl;
+  }
+
+  /**
+   * Closes cropping modal and resets temporary crop marquee state
+   */
+  closeCropModal() {
+    if (this.dom.cropModal) {
+      this.dom.cropModal.classList.add('hidden');
+    }
+    if (this.dom.cropMarquee) {
+      this.dom.cropMarquee.classList.add('hidden');
+    }
+    this.state.cropState.isDragging = false;
+    this.state.cropState.selection = null;
+  }
+
+  /**
+   * Confirms using the full uncropped viewport screenshot
+   */
+  confirmFullImage() {
+    if (!this.state.cropState.dataUrl && !this.dom.cropCanvas.width) {
+      this.closeCropModal();
+      return;
+    }
+    this.attachImageToInput({
+      dataUrl: this.state.cropState.dataUrl,
+      width: this.dom.cropCanvas.width,
+      height: this.dom.cropCanvas.height,
+      isCropped: false
+    });
+    this.closeCropModal();
+  }
+
+  /**
+   * Confirms and extracts cropped rectangular selection using an offscreen canvas
+   * Resolves Edge Case 2.2 (high-DPI coordinate normalization)
+   */
+  confirmCroppedImage() {
+    const sel = this.state.cropState.selection;
+    if (!sel || sel.width < 10 || sel.height < 10) {
+      this.confirmFullImage();
+      return;
+    }
+
+    try {
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = sel.width;
+      offCanvas.height = sel.height;
+      const offCtx = offCanvas.getContext('2d');
+      offCtx.drawImage(
+        this.dom.cropCanvas,
+        sel.x, sel.y, sel.width, sel.height,
+        0, 0, sel.width, sel.height
+      );
+
+      const croppedDataUrl = offCanvas.toDataURL('image/jpeg', 0.85);
+      this.attachImageToInput({
+        dataUrl: croppedDataUrl,
+        width: sel.width,
+        height: sel.height,
+        isCropped: true
+      });
+      this.closeCropModal();
+    } catch (err) {
+      console.error('[ChatView] Crop error:', err);
+      this.showAlert(`Failed to crop image: ${err.message}`, 'error');
+      this.confirmFullImage();
+    }
+  }
+
+  /**
+   * Attaches an image payload to the chat input preview bar
+   * @param {object} param0
+   */
+  attachImageToInput({ dataUrl, width, height, isCropped = false }) {
+    this.state.attachedImage = { dataUrl, width, height, isCropped };
+
+    if (this.dom.attachmentThumb) {
+      this.dom.attachmentThumb.src = dataUrl;
+    }
+    if (this.dom.attachmentTitle) {
+      this.dom.attachmentTitle.textContent = isCropped ? '✂️ Cropped Selection' : '🖼️ Full Page Viewport';
+    }
+    if (this.dom.attachmentDim) {
+      this.dom.attachmentDim.textContent = `${Math.round(width)} × ${Math.round(height)} px`;
+    }
+    if (this.dom.attachmentPreview) {
+      this.dom.attachmentPreview.classList.remove('hidden');
+    }
+
+    this.showVisualSuggestions();
+    this.dom.chatInput.focus();
+  }
+
+  /**
+   * Removes currently attached screenshot from chat input bar
+   */
+  removeAttachedImage() {
+    this.state.attachedImage = null;
+    if (this.dom.attachmentThumb) {
+      this.dom.attachmentThumb.src = '';
+    }
+    if (this.dom.attachmentPreview) {
+      this.dom.attachmentPreview.classList.add('hidden');
+    }
+    this.restoreArticleSuggestions();
+  }
+
+  /**
+   * Binds interactive marquee selection events on the HTML5 crop canvas
+   * Resolves Edge Case 2.2: maps CSS display coordinates to natural physical image dimensions.
+   */
+  bindCropStageEvents() {
+    const stage = this.dom.cropStage;
+    const canvas = this.dom.cropCanvas;
+    const marquee = this.dom.cropMarquee;
+    const label = this.dom.cropMarqueeLabel;
+
+    let isDrawing = false;
+    let startCssX = 0;
+    let startCssY = 0;
+
+    const onMouseDown = (e) => {
+      if (!this.state.cropState.rawImage) return;
+      const rect = canvas.getBoundingClientRect();
+      if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+        return;
+      }
+
+      isDrawing = true;
+      startCssX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+      startCssY = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+      marquee.classList.remove('hidden');
+      updateMarquee(e);
+    };
+
+    const onMouseMove = (e) => {
+      if (!isDrawing) return;
+      updateMarquee(e);
+    };
+
+    const onMouseUp = () => {
+      if (!isDrawing) return;
+      isDrawing = false;
+    };
+
+    const updateMarquee = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const stageRect = stage.getBoundingClientRect();
+      const canvasOffsetLeft = rect.left - stageRect.left;
+      const canvasOffsetTop = rect.top - stageRect.top;
+
+      const currentCssX = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+      const currentCssY = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
+
+      const boxLeft = Math.min(startCssX, currentCssX);
+      const boxTop = Math.min(startCssY, currentCssY);
+      const boxWidth = Math.abs(currentCssX - startCssX);
+      const boxHeight = Math.abs(currentCssY - startCssY);
+
+      marquee.style.left = `${canvasOffsetLeft + boxLeft}px`;
+      marquee.style.top = `${canvasOffsetTop + boxTop}px`;
+      marquee.style.width = `${boxWidth}px`;
+      marquee.style.height = `${boxHeight}px`;
+
+      // Scale to physical image dimensions (Edge Case 2.2 resolution)
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+
+      const imgX = Math.round(boxLeft * scaleX);
+      const imgY = Math.round(boxTop * scaleY);
+      const imgWidth = Math.round(boxWidth * scaleX);
+      const imgHeight = Math.round(boxHeight * scaleY);
+
+      if (imgWidth >= 20 && imgHeight >= 20) {
+        label.textContent = `${imgWidth} × ${imgHeight} px`;
+        if (this.dom.btnCropConfirm) {
+          this.dom.btnCropConfirm.disabled = false;
+        }
+        this.state.cropState.selection = {
+          x: imgX,
+          y: imgY,
+          width: imgWidth,
+          height: imgHeight
+        };
+      } else {
+        label.textContent = `${imgWidth} × ${imgHeight} px`;
+        if (this.dom.btnCropConfirm) {
+          this.dom.btnCropConfirm.disabled = true;
+        }
+        this.state.cropState.selection = null;
+      }
+    };
+
+    stage.addEventListener('mousedown', onMouseDown);
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+  }
+
+  /**
+   * Customizes suggestion chips for visual multimodal queries
+   */
+  showVisualSuggestions() {
+    if (!this.dom.suggestionsWrap) return;
+    this.dom.suggestionsWrap.innerHTML = `
+      <button type="button" class="suggestion-chip" data-query="Explain the key trend or pattern shown in this chart.">
+        📊 Explain chart trend &amp; key metrics
+      </button>
+      <button type="button" class="suggestion-chip" data-query="What does this diagram illustrate step-by-step?">
+        🔍 Analyze diagram architecture &amp; flows
+      </button>
+      <button type="button" class="suggestion-chip" data-query="What error message or warning is visible here and how do I resolve it?">
+        ⚠️ Diagnose error dialog &amp; fix steps
+      </button>
+      <button type="button" class="suggestion-chip" data-query="Extract and summarize all visible data tables, numbers, and labels.">
+        📝 Extract visible numbers &amp; labels
+      </button>
+    `;
+    const titleEl = this.container.querySelector('.chat-suggestions-title');
+    if (titleEl) {
+      titleEl.textContent = 'Visual queries for this screenshot:';
+    }
+  }
+
+  /**
+   * Restores default article reading suggestions
+   */
+  restoreArticleSuggestions() {
+    if (!this.dom.suggestionsWrap) return;
+    this.dom.suggestionsWrap.innerHTML = `
+      <button type="button" class="suggestion-chip" data-query="What is the main topic and purpose of this page?">
+        📌 What is the main topic of this page?
+      </button>
+      <button type="button" class="suggestion-chip" data-query="List the 3 most critical insights from this text.">
+        💡 List the 3 most critical insights
+      </button>
+      <button type="button" class="suggestion-chip" data-query="What technical terms or definitions are explained here?">
+        🔍 What technical terms are defined here?
+      </button>
+      <button type="button" class="suggestion-chip" data-query="Are there any prerequisites, costs, or requirements mentioned?">
+        📋 Any prerequisites or requirements mentioned?
+      </button>
+    `;
+    const titleEl = this.container.querySelector('.chat-suggestions-title');
+    if (titleEl) {
+      titleEl.textContent = 'Suggested questions for this page:';
+    }
   }
 }

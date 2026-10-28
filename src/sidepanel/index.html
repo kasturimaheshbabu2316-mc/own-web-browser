@@ -255,6 +255,13 @@
               </div>
             </div>
             <div class="chat-header-actions">
+              <button type="button" class="icon-text-btn" id="btn-chat-capture" title="Capture &amp; Ask (Screenshot active webpage)">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+                <span>Capture</span>
+              </button>
               <button type="button" class="icon-text-btn" id="btn-refresh-context" title="Refresh context from active page">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
@@ -308,7 +315,25 @@
 
           <!-- Chat Input Footer -->
           <div class="chat-input-bar">
+            <!-- Attached Screenshot Preview Chip (Slice 2.3) -->
+            <div class="chat-attachment-preview hidden" id="chat-attachment-preview">
+              <div class="attachment-thumb-wrap">
+                <img class="attachment-thumb" id="attachment-thumb-img" alt="Attached screenshot" />
+              </div>
+              <div class="attachment-meta">
+                <span class="attachment-title" id="attachment-title">Attached Screenshot</span>
+                <span class="attachment-dim" id="attachment-dim">0 × 0</span>
+              </div>
+              <button type="button" class="btn-attachment-remove" id="btn-attachment-remove" title="Remove screenshot" aria-label="Remove screenshot">✕</button>
+            </div>
+
             <div class="chat-input-wrapper">
+              <button type="button" class="btn-chat-attach" id="btn-input-capture" title="Attach screenshot of page (Capture &amp; Ask)" aria-label="Capture screenshot">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              </button>
               <textarea
                 id="chat-input"
                 class="chat-textarea"
@@ -327,6 +352,36 @@
               <span>Grounded in active tab</span>
               <span>•</span>
               <span id="chat-char-counter">0/4000</span>
+            </div>
+          </div>
+
+          <!-- Coordinate Cropping Modal Overlay (Slice 2.3) -->
+          <div class="crop-modal-overlay hidden" id="crop-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="crop-modal-heading">
+            <div class="crop-modal-card">
+              <div class="crop-modal-header">
+                <div class="crop-modal-title">
+                  <span>✂️</span>
+                  <h3 id="crop-modal-heading">Crop Screenshot (Optional)</h3>
+                </div>
+                <button type="button" class="crop-close-btn" id="btn-crop-close" title="Close cropping" aria-label="Close">✕</button>
+              </div>
+              <p class="crop-modal-subtitle">Drag on the image to crop a diagram, chart, or area. Or click <strong>Use Full Image</strong>.</p>
+              
+              <div class="crop-stage" id="crop-stage">
+                <canvas id="crop-canvas" class="crop-canvas"></canvas>
+                <div class="crop-marquee hidden" id="crop-marquee">
+                  <span class="crop-marquee-label" id="crop-marquee-label">0 × 0</span>
+                </div>
+              </div>
+
+              <div class="crop-modal-footer">
+                <button type="button" class="btn btn-secondary" id="btn-crop-full">
+                  🖼️ Use Full Image
+                </button>
+                <button type="button" class="btn btn-primary" id="btn-crop-confirm" disabled>
+                  ✂️ Crop &amp; Attach
+                </button>
+              </div>
             </div>
           </div>
         </div>
