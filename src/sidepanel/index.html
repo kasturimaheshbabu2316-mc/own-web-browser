@@ -24,11 +24,15 @@
       </div>
 
       <div class="header-actions">
-        <!-- Quick Language Toggle -->
-        <button type="button" id="quick-lang-btn" class="pill-btn" title="Toggle English / Hinglish" aria-label="Toggle Language">
-          <span class="lang-icon">🌐</span>
-          <span id="quick-lang-label">EN</span>
-        </button>
+        <!-- Bilingual Language Segment Switch (Slice 1.5) -->
+        <div class="lang-segment-control" id="lang-segment-control" role="radiogroup" aria-label="Response Language">
+          <button type="button" class="lang-segment-btn active" data-lang="en" id="lang-btn-en" role="radio" aria-checked="true" title="Standard English Mode">
+            EN
+          </button>
+          <button type="button" class="lang-segment-btn" data-lang="hinglish" id="lang-btn-hinglish" role="radio" aria-checked="false" title="Conversational Hinglish Mode">
+            Hinglish
+          </button>
+        </div>
 
         <!-- Status Pill -->
         <div id="connection-status-pill" class="status-pill status-warning" title="API Key Status">
@@ -173,8 +177,23 @@
                 <div class="streaming-skeleton-line short"></div>
               </div>
             </div>
+ 
+            <!-- Section 2: Video Chapters & Timestamps Card (Slice 1.4) -->
+            <div class="summary-section-card chapters-card hidden" id="section-chapters-wrap">
+              <div class="card-section-header">
+                <span class="section-emoji">⏱️</span>
+                <h3 class="section-heading">Video Chapters &amp; Timestamps</h3>
+                <span class="badge-count" id="chapters-count-badge">Chapters</span>
+              </div>
+              <div class="section-body" id="section-chapters-content">
+                <ul class="chapters-list" id="chapters-list-el">
+                  <li class="streaming-skeleton-line"></li>
+                  <li class="streaming-skeleton-line short"></li>
+                </ul>
+              </div>
+            </div>
 
-            <!-- Section 2: Key Insights Card -->
+            <!-- Section 3: Key Insights Card -->
             <div class="summary-section-card insights-card">
               <div class="card-section-header">
                 <span class="section-emoji">💡</span>
@@ -213,6 +232,12 @@
               <div class="raw-preview-text" id="raw-preview-text"></div>
             </div>
 
+          </div>
+ 
+          <!-- Seek Feedback Toast -->
+          <div id="seek-toast" class="seek-toast hidden" role="status" aria-live="polite">
+            <span class="seek-toast-icon">⏱️</span>
+            <span id="seek-toast-text">Sought video</span>
           </div>
         </div>
       </section>

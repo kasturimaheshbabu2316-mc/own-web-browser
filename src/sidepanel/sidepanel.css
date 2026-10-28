@@ -144,7 +144,44 @@ body {
   gap: 8px;
 }
 
-/* Pill Button (Quick Lang Toggle) */
+/* Bilingual Language Segment Switch (Slice 1.5) */
+.lang-segment-control {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-card-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 2px;
+  gap: 2px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.lang-segment-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  line-height: 1.2;
+}
+
+.lang-segment-btn:hover:not(.active) {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.lang-segment-btn.active {
+  background: var(--accent-gradient);
+  color: #ffffff;
+  box-shadow: 0 1px 6px var(--accent-glow);
+}
+
+/* Pill Button (Fallback) */
 .pill-btn {
   display: inline-flex;
   align-items: center;
@@ -1071,3 +1108,119 @@ body {
   color: var(--text-primary);
   white-space: normal;
 }
+
+/* ==========================================================================
+   YouTube Interactive Timestamps & Chapters (Slice 1.4)
+   ========================================================================== */
+.chapters-card {
+  border-left: 3px solid #ef4444;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.05) 0%, rgba(17, 24, 39, 0.95) 100%);
+}
+
+.chapters-card .badge-count {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.chapters-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chapter-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: var(--font-size-sm);
+  color: #e5e7eb;
+}
+
+.chapter-title {
+  color: #f3f4f6;
+  font-weight: 500;
+  flex: 1;
+}
+
+/* Clickable Timestamp Pills */
+.timestamp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Mono', Consolas, monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 0.16s ease;
+  line-height: 1.3;
+  vertical-align: baseline;
+  margin: 0 2px;
+}
+
+.timestamp-pill:hover {
+  background: rgba(239, 68, 68, 0.25);
+  border-color: #ef4444;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+}
+
+.timestamp-pill:active,
+.timestamp-pill.seeking {
+  transform: scale(0.95);
+  background: #ef4444;
+  color: #ffffff;
+}
+
+/* Primary Button in YouTube Mode */
+.btn-youtube {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%) !important;
+  color: #ffffff !important;
+}
+
+.btn-youtube:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%) !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.4) !important;
+}
+
+/* YouTube Badge */
+.meta-badge-yt {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #fca5a5 !important;
+  font-weight: 600;
+}
+
+/* Floating Seek Toast */
+.seek-toast {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%) translateY(0);
+  background: rgba(15, 23, 42, 0.95);
+  color: #f9fafb;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease forwards;
+}
+
+.seek-toast.hidden {
+  display: none;
+}
+

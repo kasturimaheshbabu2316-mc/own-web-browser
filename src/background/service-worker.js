@@ -76,7 +76,61 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Handle YouTube video seek routing to active tab
+  if (message.type === IPC_MESSAGES.SEEK_YOUTUBE_VIDEO) {
+    const targetTabId = message.tabId || sender?.tab?.id;
+    if (targetTabId) {
+      chrome.tabs.sendMessage(targetTabId, message, (res) => {
+        sendResponse(res || { success: true });
+      });
+      return true;
+    } else {
+      chrome.tabs.query({ active: true, currentWindow: true })
+        .then(([activeTab]) => {
+          if (activeTab && activeTab.id) {
+            chrome.tabs.sendMessage(activeTab.id, message, (res) => {
+              sendResponse(res || { success: true });
+            });
+          } else {
+            sendResponse({ success: false, error: 'No active tab found.' });
+          }
+        })
+        .catch(err => sendResponse({ success: false, error: err.message }));
+      return true;
+    }
+  }
+
   return false;
+});
+
+// Helper: Tests if URL is a YouTube watch or shorts page
+function isYouTubeWatchUrl(url = '') {
+  if (!url) return false;
+  try {
+    const u = new URL(url);
+    return (
+      (u.hostname === 'www.youtube.com' || u.hostname === 'youtube.com' || u.hostname === 'm.youtube.com') &&
+      (u.pathname === '/watch' || u.pathname.startsWith('/shorts/'))
+    ) || (u.hostname === 'youtu.be');
+  } catch {
+    return false;
+  }
+}
+
+// Slice 1.4: Detect tab navigation to youtube.com/watch?v=*
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab && tab.url && isYouTubeWatchUrl(tab.url)) {
+    console.log('[Sahayak SW] Detected navigation to YouTube watch tab:', tabId, tab.url);
+  }
+});
+
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    if (tab && tab.url && isYouTubeWatchUrl(tab.url)) {
+      console.log('[Sahayak SW] Activated YouTube tab:', tab.id, tab.url);
+    }
+  } catch {}
 });
 
 // Port listener for real-time streaming connections from Side Panel

@@ -16,8 +16,10 @@ const elements = {
   tabPanes: document.querySelectorAll('.tab-pane'),
 
   // Header Elements
-  quickLangBtn: document.getElementById('quick-lang-btn'),
-  quickLangLabel: document.getElementById('quick-lang-label'),
+  langSegmentControl: document.getElementById('lang-segment-control'),
+  langBtnEn: document.getElementById('lang-btn-en'),
+  langBtnHinglish: document.getElementById('lang-btn-hinglish'),
+  langSegmentBtns: document.querySelectorAll('.lang-segment-btn'),
   connectionStatusPill: document.getElementById('connection-status-pill'),
   connectionStatusText: document.getElementById('connection-status-text'),
 
@@ -129,16 +131,34 @@ function initSettingsListeners() {
     }
   });
 
-  // Quick Language Toggle in Header
-  elements.quickLangBtn.addEventListener('click', async () => {
-    const newLang = appState.language === 'en' ? 'hinglish' : 'en';
-    await updateLanguage(newLang);
+  // Bilingual Language Segment Switch in Header (Slice 1.5)
+  elements.langSegmentBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const selectedLang = btn.getAttribute('data-lang');
+      if (selectedLang && selectedLang !== appState.language) {
+        await updateLanguage(selectedLang);
+      }
+    });
   });
 
   // Language Select in Settings syncs with state
   elements.languageSelect.addEventListener('change', async (e) => {
     await updateLanguage(e.target.value);
   });
+
+  // Listen to storage changes to keep language preference synchronized
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName === 'local' && changes[STORAGE_KEYS.LANGUAGE]) {
+        const newLang = changes[STORAGE_KEYS.LANGUAGE].newValue;
+        if (newLang && newLang !== appState.language) {
+          appState.language = newLang;
+          elements.languageSelect.value = newLang;
+          updateLanguageUI(newLang);
+        }
+      }
+    });
+  }
 }
 
 /**
@@ -332,12 +352,22 @@ async function updateLanguage(lang) {
 }
 
 /**
- * Updates Header Language Indicator
+ * Updates Header Language Segment Control UI
  * @param {string} lang 
  */
 function updateLanguageUI(lang) {
-  elements.quickLangLabel.textContent = lang === 'hinglish' ? 'HI-EN' : 'EN';
-  elements.quickLangBtn.setAttribute('title', `Active Language: ${lang.toUpperCase()} (Click to toggle)`);
+  if (elements.langSegmentBtns) {
+    elements.langSegmentBtns.forEach(btn => {
+      const isTarget = btn.getAttribute('data-lang') === lang;
+      btn.classList.toggle('active', isTarget);
+      btn.setAttribute('aria-checked', isTarget ? 'true' : 'false');
+    });
+  }
+
+  // Notify SummaryView of active language change
+  if (summaryView && typeof summaryView.onLanguageChanged === 'function') {
+    summaryView.onLanguageChanged(lang);
+  }
 }
 
 /**

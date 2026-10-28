@@ -31,6 +31,17 @@
         "src/content/extractor.js"
       ],
       "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://youtube.com/*",
+        "*://youtu.be/*"
+      ],
+      "js": [
+        "src/content/youtube.js"
+      ],
+      "run_at": "document_idle"
     }
   ],
   "action": {
