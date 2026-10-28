@@ -25,11 +25,11 @@
 
       <div class="header-actions">
         <!-- Bilingual Language Segment Switch (Slice 1.5) -->
-        <div class="lang-segment-control" id="lang-segment-control" role="radiogroup" aria-label="Response Language">
-          <button type="button" class="lang-segment-btn active" data-lang="en" id="lang-btn-en" role="radio" aria-checked="true" title="Standard English Mode">
+        <div class="lang-segment-control" id="lang-segment-control" role="group" aria-label="Response Language">
+          <button type="button" class="lang-segment-btn active" data-lang="en" id="lang-btn-en" aria-pressed="true" title="Standard English Mode">
             EN
           </button>
-          <button type="button" class="lang-segment-btn" data-lang="hinglish" id="lang-btn-hinglish" role="radio" aria-checked="false" title="Conversational Hinglish Mode">
+          <button type="button" class="lang-segment-btn" data-lang="hinglish" id="lang-btn-hinglish" aria-pressed="false" title="Conversational Hinglish Mode">
             Hinglish
           </button>
         </div>
@@ -177,7 +177,7 @@
                 <div class="streaming-skeleton-line short"></div>
               </div>
             </div>
- 
+
             <!-- Section 2: Video Chapters & Timestamps Card (Slice 1.4) -->
             <div class="summary-section-card chapters-card hidden" id="section-chapters-wrap">
               <div class="card-section-header">
@@ -233,7 +233,7 @@
             </div>
 
           </div>
- 
+
           <!-- Seek Feedback Toast -->
           <div id="seek-toast" class="seek-toast hidden" role="status" aria-live="polite">
             <span class="seek-toast-icon">⏱️</span>
@@ -292,11 +292,11 @@
               <div class="input-group">
                 <label for="gemini-api-key" class="input-label">Gemini API Key</label>
                 <div class="input-password-wrapper">
-                  <input 
-                    type="password" 
-                    id="gemini-api-key" 
-                    class="text-input" 
-                    placeholder="AIzaSy..." 
+                  <input
+                    type="password"
+                    id="gemini-api-key"
+                    class="text-input"
+                    placeholder="AIzaSy..."
                     autocomplete="current-password"
                     spellcheck="false"
                   >

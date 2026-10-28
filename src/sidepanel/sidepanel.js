@@ -83,7 +83,7 @@ function initNavigation() {
 
 /**
  * Switches the active tab view
- * @param {string} tabName 
+ * @param {string} tabName
  */
 function switchTab(tabName) {
   appState.activeTab = tabName;
@@ -336,7 +336,7 @@ async function clearApiKey() {
 
 /**
  * Updates language state and persists to storage
- * @param {'en' | 'hinglish'} lang 
+ * @param {'en' | 'hinglish'} lang
  */
 async function updateLanguage(lang) {
   appState.language = lang;
@@ -353,14 +353,14 @@ async function updateLanguage(lang) {
 
 /**
  * Updates Header Language Segment Control UI
- * @param {string} lang 
+ * @param {string} lang
  */
 function updateLanguageUI(lang) {
   if (elements.langSegmentBtns) {
     elements.langSegmentBtns.forEach(btn => {
       const isTarget = btn.getAttribute('data-lang') === lang;
       btn.classList.toggle('active', isTarget);
-      btn.setAttribute('aria-checked', isTarget ? 'true' : 'false');
+      btn.setAttribute('aria-pressed', isTarget ? 'true' : 'false');
     });
   }
 
@@ -372,7 +372,7 @@ function updateLanguageUI(lang) {
 
 /**
  * Updates Top Header Connection Status Indicator Pill
- * @param {boolean} isConfigured 
+ * @param {boolean} isConfigured
  */
 function updateStatusPill(isConfigured) {
   elements.connectionStatusPill.className = `status-pill ${isConfigured ? 'status-success' : 'status-warning'}`;
@@ -381,8 +381,8 @@ function updateStatusPill(isConfigured) {
 
 /**
  * Displays feedback banner in Settings view
- * @param {string} message 
- * @param {'success' | 'error' | 'info'} type 
+ * @param {string} message
+ * @param {'success' | 'error' | 'info'} type
  */
 function showAlert(message, type = 'info') {
   elements.settingsAlert.className = `alert-banner alert-${type}`;

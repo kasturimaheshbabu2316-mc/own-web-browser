@@ -286,7 +286,7 @@ export class SummaryView {
 
   /**
    * Tests if URL is a YouTube watch or shorts URL (Slice 1.4)
-   * @param {string} url 
+   * @param {string} url
    * @returns {boolean}
    */
   isYouTubeUrl(url = '') {
@@ -374,7 +374,7 @@ export class SummaryView {
 
   /**
    * Verifies if URL is restricted (Chrome internal, webstore, etc.)
-   * @param {string} url 
+   * @param {string} url
    * @returns {boolean}
    */
   isRestrictedUrl(url = '') {
@@ -391,7 +391,7 @@ export class SummaryView {
 
   /**
    * Called when active language is switched from the header segment toggle (Slice 1.5)
-   * @param {'en' | 'hinglish'} newLang 
+   * @param {'en' | 'hinglish'} newLang
    */
   onLanguageChanged(newLang) {
     this.state.language = newLang;
@@ -539,7 +539,7 @@ export class SummaryView {
 
   /**
    * Extracts YouTube metadata, chapters, and transcript from the active tab
-   * @param {number} tabId 
+   * @param {number} tabId
    * @returns {Promise<object>}
    */
   async extractYouTubeContent(tabId) {
@@ -578,7 +578,7 @@ export class SummaryView {
 
   /**
    * Dispatches IPC extraction message to content script with automatic dynamic injection fallback
-   * @param {number} tabId 
+   * @param {number} tabId
    * @returns {Promise<object>}
    */
   async extractArticleContent(tabId) {
@@ -710,8 +710,8 @@ export class SummaryView {
 
   /**
    * Constructs strict system prompt for Article or YouTube video in English or Hinglish (Slice 1.4 & 1.5)
-   * @param {'en' | 'hinglish'} language 
-   * @param {boolean} isVideo 
+   * @param {'en' | 'hinglish'} language
+   * @param {boolean} isVideo
    * @returns {string}
    */
   buildSystemPrompt(language, isVideo = false) {
@@ -842,9 +842,9 @@ Rules:
 
   /**
    * Constructs user prompt with untrusted delimiters
-   * @param {object} data 
-   * @param {string} language 
-   * @param {boolean} isVideo 
+   * @param {object} data
+   * @param {string} language
+   * @param {boolean} isVideo
    * @returns {string}
    */
   buildUserPrompt(data, language, isVideo = false) {
@@ -883,7 +883,7 @@ ${data.textContent}
 
   /**
    * Parses markdown sections dynamically (TL;DR, Chapters, Key Insights, Next Steps)
-   * @param {string} markdown 
+   * @param {string} markdown
    * @returns {{ tldr: string, chapters: string[], keyInsights: string[], nextSteps: string[] }}
    */
   parseSections(markdown) {
@@ -948,7 +948,7 @@ ${data.textContent}
 
   /**
    * Converts timestamp string like MM:SS or HH:MM:SS to total seconds
-   * @param {string} timeStr 
+   * @param {string} timeStr
    * @returns {number}
    */
   parseTimestampToSeconds(timeStr = '') {
@@ -966,7 +966,7 @@ ${data.textContent}
 
   /**
    * Replaces timestamp occurrences like [02:15] with interactive clickable timestamp pills
-   * @param {string} text 
+   * @param {string} text
    * @returns {string} HTML with clickable buttons
    */
   formatTextWithClickableTimestamps(text = '') {
@@ -982,8 +982,8 @@ ${data.textContent}
 
   /**
    * Incrementally updates DOM elements during streaming
-   * @param {string} rawText 
-   * @param {boolean} isVideo 
+   * @param {string} rawText
+   * @param {boolean} isVideo
    */
   renderIncrementalSummary(rawText, isVideo = false) {
     const { tldr, chapters, keyInsights, nextSteps } = this.parseSections(rawText);
@@ -1015,8 +1015,8 @@ ${data.textContent}
 
   /**
    * Renders the finalized summary cards
-   * @param {string} fullMarkdown 
-   * @param {boolean} isVideo 
+   * @param {string} fullMarkdown
+   * @param {boolean} isVideo
    */
   renderFinalSummary(fullMarkdown, isVideo = false) {
     const { tldr, chapters, keyInsights, nextSteps } = this.parseSections(fullMarkdown);
@@ -1053,7 +1053,7 @@ ${data.textContent}
 
   /**
    * Formats a single chapter line ensuring timestamp is interactive
-   * @param {string} rawLine 
+   * @param {string} rawLine
    * @returns {string}
    */
   formatChapterLine(rawLine = '') {
@@ -1074,9 +1074,9 @@ ${data.textContent}
 
   /**
    * Seeks the active tab video player to the target seconds (Slice 1.4)
-   * @param {number} seconds 
-   * @param {string} timeLabel 
-   * @param {HTMLElement} btnElement 
+   * @param {number} seconds
+   * @param {string} timeLabel
+   * @param {HTMLElement} btnElement
    */
   async seekVideo(seconds, timeLabel = '', btnElement = null) {
     if (!this.state.activeTab || !this.state.activeTab.id) {
@@ -1118,7 +1118,7 @@ ${data.textContent}
 
   /**
    * Displays subtle floating toast confirming video seeking action
-   * @param {string} timeLabel 
+   * @param {string} timeLabel
    */
   showSeekToast(timeLabel) {
     if (!this.dom.seekToast) return;
@@ -1135,7 +1135,7 @@ ${data.textContent}
 
   /**
    * Renders skeleton placeholder lines inside cards during generation
-   * @param {boolean} isVideo 
+   * @param {boolean} isVideo
    */
   renderSkeletons(isVideo = false) {
     this.dom.tldrContent.innerHTML = `
@@ -1197,8 +1197,8 @@ ${data.textContent}
 
   /**
    * Updates loading state of primary action button
-   * @param {boolean} isLoading 
-   * @param {string} label 
+   * @param {boolean} isLoading
+   * @param {string} label
    */
   setBtnLoading(isLoading, label) {
     if (isLoading) {
@@ -1213,8 +1213,8 @@ ${data.textContent}
 
   /**
    * Displays alert banner
-   * @param {string} msg 
-   * @param {'error' | 'warning' | 'info'} type 
+   * @param {string} msg
+   * @param {'error' | 'warning' | 'info'} type
    */
   showAlert(msg, type = 'info') {
     this.dom.alertBanner.className = `alert-banner alert-${type}`;
@@ -1235,7 +1235,7 @@ ${data.textContent}
 
   /**
    * HTML escape helper
-   * @param {string} str 
+   * @param {string} str
    * @returns {string}
    */
   escapeHTML(str) {
@@ -1250,7 +1250,7 @@ ${data.textContent}
 
   /**
    * Basic markdown line formatter for fallback raw display
-   * @param {string} md 
+   * @param {string} md
    * @returns {string}
    */
   formatSimpleMarkdown(md) {
