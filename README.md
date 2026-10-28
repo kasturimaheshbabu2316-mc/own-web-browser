@@ -76,6 +76,16 @@ Highlight any text on any webpage and right-click to invoke instant AI actions:
 * **✍️ Sahayak: Draft a reply**: Generates two context-aware response options for messages, emails, or posts: (1) Quick & Crisp (1-2 sentences), and (2) Detailed & Professional.
 * **Seamless Side Panel Activation**: Automatically opens the Side Panel via user gesture, switches to Chat, and begins streaming the response with full multi-turn conversational follow-up memory.
 
+### 📷 Visual Multimodal Understanding: Capture & Ask (Slice 2.3)
+
+Instantly capture what you are viewing on the active webpage to ask visual questions about charts, diagrams, error messages, and UI layouts:
+
+* **One-Click Viewport Capture**: Trigger screenshot capture directly from the header action button or the camera attachment icon in the Chat input bar.
+* **Interactive HTML5 Coordinate Cropping**: An overlay modal lets users drag a marquee selection to crop a specific chart, figure, or table with live pixel dimension feedback.
+* **High-DPI Scale Normalization (Edge Case 2.2)**: Automatically resolves physical vs. CSS display pixel differences (`actualWidth / clientWidth`), ensuring pixel-accurate crops on Retina and 4K displays.
+* **Gemini Vision Processing**: Transmits inline base64 image data parts to Google's multimodal Gemini models (`gemini-flash-lite-latest` and `gemini-flash-latest`), delivering detailed visual reasoning on axes, data series, error codes, and practical takeaways.
+* **Bilingual Visual Reasoning**: Explain charts and infographics in English or natural conversational Hinglish.
+
 ### ⚡ Ultra-Low Latency Streaming UI
 
 Real-time typewriter streaming via Chrome's native streaming port (`sahayak-stream-port`) connected directly to Google's REST streaming API (`gemini-flash-lite-latest`), delivering full summaries in ~2 seconds.
