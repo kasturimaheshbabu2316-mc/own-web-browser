@@ -67,6 +67,15 @@ Conversational chat in the Side Panel strictly grounded in the active browser ta
 * **Context Synchronization Bar**: Displays live word count and page metadata with a one-click **Sync** button to re-read updated page DOM.
 * **Suggestion Chips & Copy Actions**: One-click prompt chips for quick page exploration and direct copy buttons for AI replies.
 
+### 🖱️ Right-Click Context Menu AI Actions (Slice 2.2)
+
+Highlight any text on any webpage and right-click to invoke instant AI actions:
+
+* **⚡ Sahayak: Explain this**: Breaks down complicated paragraphs, defines obscure jargon, and clarifies meaning and context.
+* **🌐 Sahayak: Translate to Hindi / Hinglish**: Converts English text into natural, conversational Hinglish (Hindi written in Latin alphabet, retaining technical terminology).
+* **✍️ Sahayak: Draft a reply**: Generates two context-aware response options for messages, emails, or posts: (1) Quick & Crisp (1-2 sentences), and (2) Detailed & Professional.
+* **Seamless Side Panel Activation**: Automatically opens the Side Panel via user gesture, switches to Chat, and begins streaming the response with full multi-turn conversational follow-up memory.
+
 ### ⚡ Ultra-Low Latency Streaming UI
 
 Real-time typewriter streaming via Chrome's native streaming port (`sahayak-stream-port`) connected directly to Google's REST streaming API (`gemini-flash-lite-latest`), delivering full summaries in ~2 seconds.
@@ -116,6 +125,7 @@ Own AI Browser/
 └── src/
     ├── background/
     │   ├── service-worker.js  # MV3 Background worker, side panel lifecycle & port router
+    │   ├── context-menu.js    # Selection context menu registration & action routing
     │   └── ai-orchestrator.js # Direct REST client for Gemini with streaming & backoff
     ├── content/
     │   ├── readability.js     # Bundled Mozilla Readability + isProbablyReaderable
@@ -185,7 +195,7 @@ cd own-web-browser
 | Phase | Focus Area | Status | Deliverables |
 | :--- | :--- | :---: | :--- |
 | **Phase 1** | **The Eyes: Read & Extract** | 🟢 Complete | MV3 Shell, Gemini Streaming, Cloned Readability, YouTube Timestamps, Hinglish Toggle |
-| **Phase 2** | **The Brain: Ground & Understand** | 🟡 In Progress | Grounded Page Chat (Done), Context Menus, Screenshot-and-Ask, Groq Fallback |
+| **Phase 2** | **The Brain: Ground & Understand** | 🟡 In Progress | Grounded Page Chat (Done), Context Menus (Done), Screenshot-and-Ask, Groq Fallback |
 | **Phase 3** | **The Hands: Approved Actions** | ⚪ Planned | Element Scanner, Numbered Badges, Proposal Cards, Human Confirmation Guard |
 | **Phase 4** | **The Agent: Multi-Step Memory** | ⚪ Planned | Plan DAG Engine, Self-Correction Loop, User Profiling, Voice Input |
 

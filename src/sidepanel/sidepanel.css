@@ -1483,6 +1483,21 @@ body {
   font-size: 0.68rem;
 }
 
+.msg-action-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: var(--radius-full);
+  margin-bottom: 6px;
+  letter-spacing: 0.02em;
+}
+
 .ai-bubble {
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);

@@ -4,6 +4,7 @@
 
 import { STORAGE_KEYS, DEFAULT_CONFIG, IPC_MESSAGES } from '../shared/constants.js';
 import { generateContent, streamGenerateContent } from './ai-orchestrator.js';
+import { setupContextMenus, handleContextMenuClick } from './context-menu.js';
 import { DEV_CONFIG } from '../shared/env.js';
 
 // Configure Chrome Side Panel to open automatically when extension action icon is clicked
@@ -18,6 +19,9 @@ chrome.runtime.onInstalled.addListener(async (details) => {
   } catch (error) {
     console.error('[Sahayak SW] Error setting panel behavior:', error);
   }
+
+  // Initialize Right-Click Selection Context Menus (Slice 2.2)
+  setupContextMenus();
 
   // Initialize default configuration in chrome.storage.local if empty
   try {
@@ -50,6 +54,11 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     console.error('[Sahayak SW] Error initializing defaults:', error);
   }
 });
+
+// Register Context Menu Click Listener at top-level for MV3 service worker reliability (Slice 2.2)
+if (typeof chrome !== 'undefined' && chrome.contextMenus && chrome.contextMenus.onClicked) {
+  chrome.contextMenus.onClicked.addListener(handleContextMenuClick);
+}
 
 // Runtime message router for standard request-response IPC
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

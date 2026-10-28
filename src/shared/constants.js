@@ -10,7 +10,8 @@ export const STORAGE_KEYS = {
   USER_PROFILE: 'sahayak_user_profile',
   SAVED_SKILLS: 'sahayak_saved_skills',
   AGENT_SETTINGS: 'sahayak_agent_settings',
-  THEME: 'sahayak_theme'
+  THEME: 'sahayak_theme',
+  PENDING_CONTEXT_ACTION: 'sahayak_pending_context_action'
 };
 
 export const DEFAULT_CONFIG = {
@@ -35,6 +36,12 @@ export const AVAILABLE_MODELS = [
   }
 ];
 
+export const CONTEXT_MENU_IDS = {
+  EXPLAIN: 'sahayak-explain',
+  TRANSLATE: 'sahayak-translate',
+  DRAFT: 'sahayak-draft'
+};
+
 export const IPC_MESSAGES = {
   PING: 'SAHAYAK_PING',
   GET_SETTINGS: 'SAHAYAK_GET_SETTINGS',
@@ -46,6 +53,7 @@ export const IPC_MESSAGES = {
   SEEK_YOUTUBE_VIDEO: 'SAHAYAK_SEEK_YOUTUBE_VIDEO',
   FETCH_YOUTUBE_TRANSCRIPT: 'SAHAYAK_FETCH_YOUTUBE_TRANSCRIPT',
   LANGUAGE_CHANGED: 'SAHAYAK_LANGUAGE_CHANGED',
+  EXECUTE_CONTEXT_ACTION: 'SAHAYAK_EXECUTE_CONTEXT_ACTION',
   STREAM_CONNECT: 'SAHAYAK_STREAM_PORT',
   STREAM_CHUNK: 'SAHAYAK_STREAM_CHUNK',
   STREAM_DONE: 'SAHAYAK_STREAM_DONE',

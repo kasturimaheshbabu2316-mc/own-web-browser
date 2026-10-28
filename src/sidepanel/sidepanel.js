@@ -55,7 +55,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   initNavigation();
   initSettingsListeners();
   initSubComponents();
+  initRuntimeMessageListener();
   await loadSavedSettings();
+  await checkPendingContextAction();
 });
 
 /**
@@ -411,5 +413,58 @@ function showAlert(message, type = 'info') {
     setTimeout(() => {
       elements.settingsAlert.classList.add('hidden');
     }, 6000);
+  }
+}
+
+/**
+ * Sets up runtime message listener for active side panel communication (Slice 2.2)
+ */
+function initRuntimeMessageListener() {
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener((message) => {
+      if (message && message.type === IPC_MESSAGES.EXECUTE_CONTEXT_ACTION) {
+        handlePendingContextAction(message.payload);
+      }
+    });
+  }
+}
+
+/**
+ * Checks and executes any pending context action stored in chrome.storage.local (Slice 2.2)
+ */
+async function checkPendingContextAction() {
+  try {
+    const data = await chrome.storage.local.get([STORAGE_KEYS.PENDING_CONTEXT_ACTION]);
+    const pending = data[STORAGE_KEYS.PENDING_CONTEXT_ACTION];
+    if (pending && pending.selectionText) {
+      await chrome.storage.local.remove([STORAGE_KEYS.PENDING_CONTEXT_ACTION]);
+      // Consume only if recent (< 60 seconds old)
+      if (Date.now() - (pending.timestamp || 0) < 60000) {
+        handlePendingContextAction(pending);
+      }
+    }
+  } catch (err) {
+    console.warn('[Sahayak SidePanel] Error checking pending context action:', err);
+  }
+}
+
+/**
+ * Dispatches context action to ChatView (Slice 2.2)
+ * @param {object} payload
+ */
+function handlePendingContextAction(payload) {
+  if (!payload || !payload.selectionText) return;
+
+  // Switch directly to Chat tab
+  switchTab('chat');
+
+  if (chatView && typeof chatView.handleContextAction === 'function') {
+    chatView.handleContextAction(payload);
+  } else {
+    setTimeout(() => {
+      if (chatView && typeof chatView.handleContextAction === 'function') {
+        chatView.handleContextAction(payload);
+      }
+    }, 150);
   }
 }
