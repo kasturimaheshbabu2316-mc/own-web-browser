@@ -86,6 +86,17 @@ Instantly capture what you are viewing on the active webpage to ask visual quest
 * **Gemini Vision Processing**: Transmits inline base64 image data parts to Google's multimodal Gemini models (`gemini-flash-lite-latest` and `gemini-flash-latest`), delivering detailed visual reasoning on axes, data series, error codes, and practical takeaways.
 * **Bilingual Visual Reasoning**: Explain charts and infographics in English or natural conversational Hinglish.
 
+### 🔄 Free-Tier Resilience & Groq Fallback Engine (Slice 2.4)
+
+Zero-downtime free-tier operation designed for high developer productivity:
+
+* **Exponential Backoff & Jitter**: Automatically catches HTTP 429 (rate-limiting) and HTTP 503 (server overload) from Gemini, performing up to 2 progressive retries with jitter (`1000ms * 2^attempt + jitter`).
+* **Groq Llama-3.3-70b Fallback**: If Gemini remains throttled, Sahayak seamlessly converts message structures to OpenAI format and executes instant failover via Groq's high-speed inference engine (`llama-3.3-70b-versatile`).
+* **Dynamic Status Indicators**: Header indicator pill and message headers dynamically update to reflect real-time provider state:
+  - 🟢 **Gemini Flash-Lite Active**: Primary engine operational.
+  - 🟠 **Rate-limited. Switched to Groq Fallback**: Circuit breaker active with Llama-3.3 fallback.
+* **Independent Key Testing**: Settings view provides dedicated configuration, visibility toggles, and live connection testing for both Gemini and Groq API keys.
+
 ### ⚡ Ultra-Low Latency Streaming UI
 
 Real-time typewriter streaming via Chrome's native streaming port (`sahayak-stream-port`) connected directly to Google's REST streaming API (`gemini-flash-lite-latest`), delivering full summaries in ~2 seconds.

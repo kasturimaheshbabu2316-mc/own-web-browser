@@ -55,19 +55,22 @@ export function createGenerateRequest({
  * @param {string} [params.text]
  * @param {string} [params.error]
  * @param {string} [params.model]
+ * @param {'gemini' | 'groq'} [params.provider='gemini']
  * @returns {object}
  */
 export function createGenerateResponse({
   success,
   text = '',
   error = null,
-  model = ''
+  model = '',
+  provider = 'gemini'
 }) {
   return {
     success,
     text,
     error,
     model,
+    provider,
     timestamp: Date.now()
   };
 }

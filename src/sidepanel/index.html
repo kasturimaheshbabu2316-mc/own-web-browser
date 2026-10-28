@@ -485,6 +485,79 @@
             </div>
           </div>
 
+          <!-- Groq Free-Tier Fallback API Key Card (Slice 2.4) -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon">⚡</span>
+                <div>
+                  <h3 class="card-title">Groq Free-Tier Fallback</h3>
+                  <p class="card-desc">Automatic instant failover using Llama-3.3-70b when Gemini encounters HTTP 429 rate limits.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <div class="input-group">
+                <label for="groq-api-key" class="input-label">Groq API Key (Optional)</label>
+                <div class="input-password-wrapper">
+                  <input
+                    type="password"
+                    id="groq-api-key"
+                    class="text-input"
+                    placeholder="gsk_..."
+                    autocomplete="current-password"
+                    spellcheck="false"
+                  >
+                  <button type="button" id="toggle-groq-visibility" class="icon-btn" title="Show/Hide Key" aria-label="Show or hide Groq key">
+                    <svg id="groq-eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                  </button>
+                </div>
+                <div class="field-hint">
+                  Free Groq API key (optional for fallback):
+                  <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" class="link">
+                    Get a free key from Groq Console ↗
+                  </a>
+                </div>
+              </div>
+
+              <div class="button-row">
+                <button type="button" id="save-groq-btn" class="btn btn-primary">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17 21 17 13 7 13 7 21"/>
+                    <polyline points="7 3 7 8 15 8"/>
+                  </svg>
+                  <span>Save Groq Key</span>
+                </button>
+
+                <button type="button" id="test-groq-btn" class="btn btn-secondary">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  <span>Test Groq</span>
+                </button>
+
+                <button type="button" id="clear-groq-btn" class="btn btn-ghost" title="Clear Groq key">
+                  <span>Clear</span>
+                </button>
+              </div>
+
+              <!-- Live Test Result Output for Groq -->
+              <div id="test-groq-box" class="test-result-box hidden">
+                <div class="test-result-header">
+                  <span class="test-result-badge">Groq Llama-3.3 Live Response</span>
+                  <span id="test-groq-latency" class="test-latency"></span>
+                </div>
+                <div id="test-groq-text" class="test-result-text"></div>
+              </div>
+            </div>
+          </div>
+
           <!-- Model & Language Preferences Card -->
           <div class="card">
             <div class="card-header">

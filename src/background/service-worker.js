@@ -2,7 +2,7 @@
  * Sahayak Extension - Background Service Worker (Manifest V3)
  */
 
-import { STORAGE_KEYS, DEFAULT_CONFIG, IPC_MESSAGES } from '../shared/constants.js';
+import { STORAGE_KEYS, DEFAULT_CONFIG, GROQ_CONFIG, IPC_MESSAGES } from '../shared/constants.js';
 import { generateContent, streamGenerateContent } from './ai-orchestrator.js';
 import { setupContextMenus, handleContextMenuClick } from './context-menu.js';
 import { DEV_CONFIG } from '../shared/env.js';
@@ -73,6 +73,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === IPC_MESSAGES.TEST_API_KEY) {
     handleTestApiKey(message.apiKey, message.model)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
+  if (message.type === IPC_MESSAGES.TEST_GROQ_KEY) {
+    handleTestGroqApiKey(message.apiKey)
       .then(result => sendResponse(result))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;
@@ -202,6 +209,12 @@ chrome.runtime.onConnect.addListener((port) => {
         try {
           await streamGenerateContent({
             ...msg.payload,
+            onStatus: (status) => {
+              port.postMessage({
+                type: IPC_MESSAGES.STREAM_STATUS,
+                ...status
+              });
+            },
             onChunk: (chunk, accumulatedText) => {
               port.postMessage({
                 type: IPC_MESSAGES.STREAM_CHUNK,
@@ -209,10 +222,12 @@ chrome.runtime.onConnect.addListener((port) => {
                 accumulatedText
               });
             },
-            onDone: (fullText) => {
+            onDone: (fullText, meta = {}) => {
               port.postMessage({
                 type: IPC_MESSAGES.STREAM_DONE,
-                text: fullText
+                text: fullText,
+                provider: meta.provider || 'gemini',
+                model: meta.model || ''
               });
             },
             onError: (error) => {
@@ -289,5 +304,52 @@ async function handleTestApiKey(apiKey, model = DEFAULT_CONFIG.MODEL) {
     };
   } catch (err) {
     return { success: false, error: `Network error: ${err.message}` };
+  }
+}
+
+/**
+ * Validates Groq API Key by testing Llama-3.3-70b chat completions
+ * @param {string} apiKey 
+ */
+async function handleTestGroqApiKey(apiKey) {
+  if (!apiKey || apiKey.trim() === '') {
+    return { success: false, error: 'Groq API key is empty.' };
+  }
+
+  const startTime = Date.now();
+  try {
+    const res = await fetch(GROQ_CONFIG.ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey.trim()}`
+      },
+      body: JSON.stringify({
+        model: GROQ_CONFIG.MODEL,
+        messages: [{ role: 'user', content: 'Say "Groq Llama-3.3 fallback is online!" in 6 words or less.' }],
+        max_tokens: 32,
+        temperature: 0.1
+      })
+    });
+
+    const latency = Date.now() - startTime;
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      const message = errJson.error?.message || `Groq API error (HTTP ${res.status})`;
+      return { success: false, error: message };
+    }
+
+    const data = await res.json();
+    const text = data.choices?.[0]?.message?.content?.trim() || 'Groq connection confirmed.';
+    return {
+      success: true,
+      modelName: GROQ_CONFIG.MODEL,
+      sampleOutput: text,
+      latency: `${latency}ms`,
+      message: 'Groq API Key is valid and generating tokens!'
+    };
+  } catch (err) {
+    return { success: false, error: `Network error connecting to Groq: ${err.message}` };
   }
 }

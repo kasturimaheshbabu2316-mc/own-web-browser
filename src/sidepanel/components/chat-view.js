@@ -588,7 +588,24 @@ Be precise, structured, and helpful.`)
       let accumulatedText = '';
 
       port.onMessage.addListener((msg) => {
-        if (msg.type === IPC_MESSAGES.STREAM_CHUNK) {
+        if (msg.type === IPC_MESSAGES.STREAM_STATUS) {
+          if (msg.status === 'retrying') {
+            aiBubble.typingIndicator.classList.remove('hidden');
+            aiBubble.typingIndicator.innerHTML = `<span></span><span></span><span></span> <span class="stream-retry-label">⏳ ${this.escapeHTML(msg.message)}</span>`;
+          } else if (msg.status === 'fallback') {
+            if (aiBubble.headerEl) {
+              const badge = aiBubble.headerEl.querySelector('.grounded-badge');
+              if (badge) {
+                badge.textContent = '⚡ Groq Fallback (Llama-3.3)';
+                badge.className = 'grounded-badge badge-fallback';
+              }
+            }
+            if (typeof window.sahayakUpdateStatusPill === 'function') {
+              window.sahayakUpdateStatusPill('fallback');
+            }
+          }
+
+        } else if (msg.type === IPC_MESSAGES.STREAM_CHUNK) {
           accumulatedText = msg.accumulatedText;
           aiBubble.bodyEl.innerHTML = this.renderMarkdown(accumulatedText);
           aiBubble.typingIndicator.classList.add('hidden');
@@ -599,6 +616,14 @@ Be precise, structured, and helpful.`)
           aiBubble.bodyEl.innerHTML = this.renderMarkdown(accumulatedText);
           aiBubble.typingIndicator.classList.add('hidden');
           aiBubble.actionsEl.classList.remove('hidden');
+
+          if (msg.provider === 'groq' && aiBubble.headerEl) {
+            const badge = aiBubble.headerEl.querySelector('.grounded-badge');
+            if (badge) {
+              badge.textContent = '⚡ Groq Fallback (Llama-3.3)';
+              badge.className = 'grounded-badge badge-fallback';
+            }
+          }
 
           this.state.messages.push({
             role: 'model',
@@ -782,6 +807,7 @@ ${this.state.pageContext.textContent}
 
     return {
       containerEl: msgEl,
+      headerEl: msgEl.querySelector('.msg-header'),
       bodyEl: msgEl.querySelector('.msg-body'),
       typingIndicator: msgEl.querySelector('.chat-typing-indicator'),
       actionsEl: msgEl.querySelector('.msg-actions')

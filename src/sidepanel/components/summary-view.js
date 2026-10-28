@@ -656,7 +656,20 @@ export class SummaryView {
       let accumulatedText = '';
 
       port.onMessage.addListener((msg) => {
-        if (msg.type === IPC_MESSAGES.STREAM_CHUNK) {
+        if (msg.type === IPC_MESSAGES.STREAM_STATUS) {
+          if (msg.status === 'retrying') {
+            this.dom.rawPreviewText.textContent = `⏳ ${msg.message}`;
+            this.dom.badgeLatency.textContent = `Retrying (${msg.attempt}/2)...`;
+          } else if (msg.status === 'fallback') {
+            this.dom.rawPreviewText.textContent = `⚡ Rate-limited on Gemini. Switched to Groq Fallback (Llama-3.3-70b)...`;
+            this.dom.badgeModel.textContent = 'Llama-3.3 (Groq Fallback)';
+            this.dom.badgeModel.className = 'meta-badge meta-badge-accent';
+            if (typeof window.sahayakUpdateStatusPill === 'function') {
+              window.sahayakUpdateStatusPill('fallback');
+            }
+          }
+
+        } else if (msg.type === IPC_MESSAGES.STREAM_CHUNK) {
           accumulatedText = msg.accumulatedText;
           this.state.rawMarkdown = accumulatedText;
           this.dom.rawPreviewText.textContent = accumulatedText;
@@ -669,6 +682,11 @@ export class SummaryView {
           const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
           this.dom.badgeLatency.textContent = `${totalDuration}s`;
           this.state.rawMarkdown = msg.text || accumulatedText;
+
+          if (msg.provider === 'groq') {
+            this.dom.badgeModel.textContent = 'Llama-3.3 (Groq Fallback)';
+            this.dom.badgeModel.className = 'meta-badge meta-badge-accent';
+          }
 
           // Final polished render with interactive timestamp buttons
           this.renderFinalSummary(this.state.rawMarkdown, isVideo);

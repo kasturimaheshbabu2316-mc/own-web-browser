@@ -229,7 +229,7 @@ Turn the side panel into an active conversational partner that answers questions
 - [x] Chat responds accurately using only page context, refusing ungrounded queries (Slice 2.1).
 - [x] Right-click context menus trigger Explain, Translate, and Draft reply (Slice 2.2).
 - [x] Screenshot-and-ask captures visible screen regions and accurately answers visual questions (Slice 2.3).
-- [ ] Throttling and rate limits fail over to the Groq fallback provider seamlessly.
+- [x] Throttling and rate limits fail over to the Groq fallback provider seamlessly (Slice 2.4).
 
 ---
 
@@ -482,7 +482,7 @@ Before publishing the project, execute this end-to-end verification checklist:
 | **Grounded Page Chat** | Answers strictly from page context; declines ungrounded queries | [x] |
 | **Context Menu Actions** | Right-click triggers Explain, Translate, and Draft Reply | [x] |
 | **Multimodal Vision** | Captures tab and correctly analyzes visual diagrams/charts | [x] |
-| **Rate-Limit Resilience** | Retries with backoff and fails over to Groq free tier on 429 | [ ] |
+| **Rate-Limit Resilience** | Retries with backoff and fails over to Groq free tier on 429 | [x] |
 | **DOM Scanner & Badges** | Assigns stable numbers in closed Shadow DOM overlay | [ ] |
 | **Find It For Me** | Natural language query scrolls to and highlights target element | [ ] |
 | **Human-in-the-Loop Loop** | No DOM action occurs without user clicking "Approve" | [ ] |

@@ -243,6 +243,38 @@ body {
   background: var(--status-warning);
 }
 
+.status-pill-fallback {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  animation: fallbackPulse 2s infinite ease-in-out;
+}
+.status-pill-fallback .status-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+}
+
+@keyframes fallbackPulse {
+  0%, 100% {
+    border-color: rgba(245, 158, 11, 0.4);
+    box-shadow: 0 0 0 rgba(245, 158, 11, 0);
+  }
+  50% {
+    border-color: rgba(245, 158, 11, 0.8);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+  }
+}
+
+.status-info {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+.status-info .status-dot {
+  background: #3b82f6;
+  box-shadow: 0 0 6px #3b82f6;
+}
+
 .status-error {
   background: var(--status-error-bg);
   color: var(--status-error);
@@ -250,6 +282,19 @@ body {
 }
 .status-error .status-dot {
   background: var(--status-error);
+}
+
+.grounded-badge.badge-fallback {
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.stream-retry-label {
+  font-size: 0.72rem;
+  color: #fbbf24;
+  margin-left: 6px;
+  font-weight: 500;
 }
 
 /* Navigation Tabs */

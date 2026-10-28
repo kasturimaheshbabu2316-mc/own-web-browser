@@ -37,16 +37,29 @@ const elements = {
   settingsAlert: document.getElementById('settings-alert'),
   testResultBox: document.getElementById('test-result-box'),
   testLatency: document.getElementById('test-latency'),
-  testResultText: document.getElementById('test-result-text')
+  testResultText: document.getElementById('test-result-text'),
+
+  // Groq Fallback Settings Elements (Slice 2.4)
+  groqApiKeyInput: document.getElementById('groq-api-key'),
+  toggleGroqVisibilityBtn: document.getElementById('toggle-groq-visibility'),
+  groqEyeIcon: document.getElementById('groq-eye-icon'),
+  saveGroqBtn: document.getElementById('save-groq-btn'),
+  testGroqBtn: document.getElementById('test-groq-btn'),
+  clearGroqBtn: document.getElementById('clear-groq-btn'),
+  testGroqBox: document.getElementById('test-groq-box'),
+  testGroqLatency: document.getElementById('test-groq-latency'),
+  testGroqText: document.getElementById('test-groq-text')
 };
 
 // Application State
 let appState = {
   activeTab: 'settings',
   apiKey: '',
+  groqApiKey: '',
   defaultModel: DEFAULT_CONFIG.MODEL,
   language: DEFAULT_CONFIG.LANGUAGE,
-  isKeyVisible: false
+  isKeyVisible: false,
+  isGroqKeyVisible: false
 };
 
 // Initialize Application
@@ -145,6 +158,37 @@ function initSettingsListeners() {
     }
   });
 
+  // Toggle Groq Key Visibility (Slice 2.4)
+  if (elements.toggleGroqVisibilityBtn) {
+    elements.toggleGroqVisibilityBtn.addEventListener('click', () => {
+      appState.isGroqKeyVisible = !appState.isGroqKeyVisible;
+      elements.groqApiKeyInput.type = appState.isGroqKeyVisible ? 'text' : 'password';
+    });
+  }
+
+  // Save Groq Key Button (Slice 2.4)
+  if (elements.saveGroqBtn) {
+    elements.saveGroqBtn.addEventListener('click', async () => {
+      await saveGroqKey();
+    });
+  }
+
+  // Test Groq Connection Button (Slice 2.4)
+  if (elements.testGroqBtn) {
+    elements.testGroqBtn.addEventListener('click', async () => {
+      await testGroqApiKeyConnection();
+    });
+  }
+
+  // Clear Groq Key Button (Slice 2.4)
+  if (elements.clearGroqBtn) {
+    elements.clearGroqBtn.addEventListener('click', async () => {
+      if (confirm('Are you sure you want to clear your saved Groq fallback key?')) {
+        await clearGroqKey();
+      }
+    });
+  }
+
   // Bilingual Language Segment Switch in Header (Slice 1.5)
   elements.langSegmentBtns.forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -184,6 +228,7 @@ async function loadSavedSettings() {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       data = await chrome.storage.local.get([
         STORAGE_KEYS.GEMINI_API_KEY,
+        STORAGE_KEYS.GROQ_API_KEY,
         STORAGE_KEYS.DEFAULT_MODEL,
         STORAGE_KEYS.LANGUAGE
       ]);
@@ -199,17 +244,21 @@ async function loadSavedSettings() {
     }
 
     appState.apiKey = apiKey;
+    appState.groqApiKey = data[STORAGE_KEYS.GROQ_API_KEY] || '';
     appState.defaultModel = data[STORAGE_KEYS.DEFAULT_MODEL] || DEFAULT_CONFIG.MODEL;
     appState.language = data[STORAGE_KEYS.LANGUAGE] || DEFAULT_CONFIG.LANGUAGE;
 
     // Populate Settings UI
     elements.geminiApiKeyInput.value = appState.apiKey;
+    if (elements.groqApiKeyInput) {
+      elements.groqApiKeyInput.value = appState.groqApiKey;
+    }
     elements.defaultModelSelect.value = appState.defaultModel;
     elements.languageSelect.value = appState.language;
 
     // Update Header indicators
     updateLanguageUI(appState.language);
-    updateStatusPill(Boolean(appState.apiKey));
+    updateStatusPill();
 
     // If API key is configured, land directly on Summary tab
     if (appState.apiKey) {
@@ -391,11 +440,117 @@ function updateLanguageUI(lang) {
 
 /**
  * Updates Top Header Connection Status Indicator Pill
- * @param {boolean} isConfigured
+ * Supports Gemini active, Groq fallback active, Groq standalone active, or setup required.
+ * @param {string|boolean} [status]
  */
-function updateStatusPill(isConfigured) {
-  elements.connectionStatusPill.className = `status-pill ${isConfigured ? 'status-success' : 'status-warning'}`;
-  elements.connectionStatusText.textContent = isConfigured ? 'Key Configured' : 'Setup Required';
+function updateStatusPill(status) {
+  if (status === 'fallback') {
+    elements.connectionStatusPill.className = 'status-pill status-warning status-pill-fallback';
+    elements.connectionStatusText.textContent = 'Rate-limited: Groq Fallback';
+    elements.connectionStatusPill.title = 'Active Provider: Groq Llama-3.3-70b (Gemini throttled)';
+    return;
+  }
+
+  if (status === 'retrying') {
+    elements.connectionStatusPill.className = 'status-pill status-warning';
+    elements.connectionStatusText.textContent = 'Retrying Gemini...';
+    elements.connectionStatusPill.title = 'Gemini rate-limited. Retrying with exponential backoff...';
+    return;
+  }
+
+  const hasGemini = Boolean(appState.apiKey);
+  const hasGroq = Boolean(appState.groqApiKey);
+
+  if (hasGemini) {
+    elements.connectionStatusPill.className = 'status-pill status-success';
+    elements.connectionStatusText.textContent = 'Gemini Flash-Lite Active';
+    elements.connectionStatusPill.title = 'Primary Engine: Google Gemini Flash-Lite';
+  } else if (hasGroq) {
+    elements.connectionStatusPill.className = 'status-pill status-success';
+    elements.connectionStatusText.textContent = 'Groq Llama-3.3 Active';
+    elements.connectionStatusPill.title = 'Primary Engine: Groq Llama-3.3-70b';
+  } else {
+    elements.connectionStatusPill.className = 'status-pill status-warning';
+    elements.connectionStatusText.textContent = 'Setup Required';
+    elements.connectionStatusPill.title = 'Configure API keys in Settings';
+  }
+}
+
+// Expose status pill updater to child views (SummaryView, ChatView)
+window.sahayakUpdateStatusPill = updateStatusPill;
+
+/**
+ * Saves Groq Fallback API key to chrome.storage.local (Slice 2.4)
+ */
+async function saveGroqKey() {
+  const apiKey = (elements.groqApiKeyInput ? elements.groqApiKeyInput.value : '').trim();
+  if (elements.saveGroqBtn) elements.saveGroqBtn.classList.add('loading');
+
+  try {
+    await chrome.storage.local.set({ [STORAGE_KEYS.GROQ_API_KEY]: apiKey });
+    appState.groqApiKey = apiKey;
+    updateStatusPill();
+    showAlert('Groq fallback key saved successfully!', 'success');
+  } catch (error) {
+    showAlert(`Error saving Groq key: ${error.message}`, 'error');
+  } finally {
+    if (elements.saveGroqBtn) elements.saveGroqBtn.classList.remove('loading');
+  }
+}
+
+/**
+ * Tests connection to Groq API (Slice 2.4)
+ */
+async function testGroqApiKeyConnection() {
+  const apiKey = (elements.groqApiKeyInput ? elements.groqApiKeyInput.value : '').trim();
+
+  if (!apiKey) {
+    showAlert('Please enter a Groq API key first.', 'error');
+    if (elements.groqApiKeyInput) elements.groqApiKeyInput.focus();
+    return;
+  }
+
+  showAlert('Testing Groq connection...', 'info');
+  if (elements.testGroqBtn) elements.testGroqBtn.classList.add('loading');
+  if (elements.testGroqBox) elements.testGroqBox.classList.remove('hidden');
+  if (elements.testGroqLatency) elements.testGroqLatency.textContent = 'Connecting...';
+  if (elements.testGroqText) elements.testGroqText.textContent = 'Sending ping request to Groq Llama-3.3...';
+
+  try {
+    const res = await chrome.runtime.sendMessage({
+      type: IPC_MESSAGES.TEST_GROQ_KEY,
+      apiKey
+    });
+
+    if (res && res.success) {
+      if (elements.testGroqLatency) elements.testGroqLatency.textContent = res.latency || 'Verified';
+      if (elements.testGroqText) elements.testGroqText.textContent = res.sampleOutput || 'Groq connection confirmed.';
+      showAlert('Connected! Groq Llama-3.3-70b is online and responding.', 'success');
+      updateStatusPill();
+    } else {
+      if (elements.testGroqLatency) elements.testGroqLatency.textContent = 'Failed';
+      if (elements.testGroqText) elements.testGroqText.textContent = `Error: ${res?.error || 'Authentication failed'}`;
+      showAlert(`Groq error: ${res?.error || 'Could not verify key'}`, 'error');
+    }
+  } catch (err) {
+    if (elements.testGroqLatency) elements.testGroqLatency.textContent = 'Failed';
+    if (elements.testGroqText) elements.testGroqText.textContent = `Network error: ${err.message}`;
+    showAlert(`Communication error: ${err.message}`, 'error');
+  } finally {
+    if (elements.testGroqBtn) elements.testGroqBtn.classList.remove('loading');
+  }
+}
+
+/**
+ * Clears saved Groq API key
+ */
+async function clearGroqKey() {
+  if (elements.groqApiKeyInput) elements.groqApiKeyInput.value = '';
+  appState.groqApiKey = '';
+  await chrome.storage.local.remove([STORAGE_KEYS.GROQ_API_KEY]);
+  if (elements.testGroqBox) elements.testGroqBox.classList.add('hidden');
+  updateStatusPill();
+  showAlert('Groq fallback key cleared.', 'info');
 }
 
 /**
@@ -417,13 +572,15 @@ function showAlert(message, type = 'info') {
 }
 
 /**
- * Sets up runtime message listener for active side panel communication (Slice 2.2)
+ * Sets up runtime message listener for active side panel communication (Slice 2.2 & 2.4)
  */
 function initRuntimeMessageListener() {
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
     chrome.runtime.onMessage.addListener((message) => {
       if (message && message.type === IPC_MESSAGES.EXECUTE_CONTEXT_ACTION) {
         handlePendingContextAction(message.payload);
+      } else if (message && message.type === IPC_MESSAGES.FALLBACK_STATUS_CHANGED) {
+        updateStatusPill(message.status);
       }
     });
   }
