@@ -53,8 +53,8 @@
       border-radius: var(--radius-lg);
       padding: 24px;
       margin-bottom: 28px;
-      backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -112,8 +112,12 @@
       border-radius: var(--radius-lg);
       padding: 32px;
       box-shadow: var(--shadow-lg);
-      backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(16px);
+    }
+
+    .form-group-terms {
+      margin-top: 18px;
     }
 
     .card-title {
@@ -329,7 +333,7 @@
       </div>
       <nav class="links-bar" aria-label="Practice Resources">
         <a href="#quick-fill" id="btn-quick-fill">Auto-Fill Mock Data</a>
-        <a href="https://example.com/faq" target="_blank" rel="noopener">FAQ & Guidelines</a>
+        <a href="https://example.com/faq" target="_blank" rel="noopener">FAQ &amp; Guidelines</a>
         <a href="https://example.com/support" target="_blank" rel="noopener">Support</a>
       </nav>
     </header>
@@ -341,7 +345,7 @@
 
       <form id="internship-form" novalidate>
         <!-- Hidden input (CSRF Token) to test that hidden inputs are excluded -->
-        <input type="hidden" name="csrf_token" value="sahayak-test-token-xyz123" />
+        <input type="hidden" name="csrf_token" value="sahayak-test-token-xyz123">
 
         <!-- Personal Details -->
         <div class="section-title">
@@ -351,30 +355,30 @@
         <div class="grid-2">
           <div class="form-group">
             <label for="fullName">Full Name <span class="req">*</span></label>
-            <input type="text" id="fullName" name="fullName" placeholder="e.g. Ramesh Kumar" required />
+            <input type="text" id="fullName" name="fullName" placeholder="e.g. Ramesh Kumar" required>
           </div>
 
           <div class="form-group">
             <label for="email">Email Address <span class="req">*</span></label>
-            <input type="email" id="email" name="email" placeholder="ramesh@example.com" required />
+            <input type="email" id="email" name="email" placeholder="ramesh@example.com" required>
           </div>
         </div>
 
         <div class="grid-2">
           <div class="form-group">
             <label for="phone">Phone Number <span class="req">*</span></label>
-            <input type="tel" id="phone" name="phone" placeholder="+91 98765 43210" required />
+            <input type="tel" id="phone" name="phone" placeholder="+91 98765 43210" required>
           </div>
 
           <div class="form-group">
             <label for="college">College / University <span class="req">*</span></label>
-            <input type="text" id="college" name="college" placeholder="IIT Bombay / BITS Pilani" required />
+            <input type="text" id="college" name="college" placeholder="IIT Bombay / BITS Pilani" required>
           </div>
         </div>
 
         <!-- Academic & Technical Background -->
         <div class="section-title">
-          <span>2. Academic & Role Preferences</span>
+          <span>2. Academic &amp; Role Preferences</span>
         </div>
 
         <div class="grid-2">
@@ -393,8 +397,8 @@
             <label for="role">Target Internship Track <span class="req">*</span></label>
             <select id="role" name="role" required>
               <option value="">Select primary track...</option>
-              <option value="frontend">Frontend & Browser Systems</option>
-              <option value="ai-systems">Generative AI & Agentic Systems</option>
+              <option value="frontend">Frontend &amp; Browser Systems</option>
+              <option value="ai-systems">Generative AI &amp; Agentic Systems</option>
               <option value="fullstack">Full-Stack Cloud Engineering</option>
             </select>
           </div>
@@ -405,20 +409,20 @@
           <label>Core Technical Strengths (Select all that apply)</label>
           <div class="choice-group">
             <label class="choice-item">
-              <input type="checkbox" name="skills" value="javascript" />
+              <input type="checkbox" id="skill-javascript" name="skill_javascript" value="javascript">
               <span>JavaScript / ES Modules</span>
             </label>
             <label class="choice-item">
-              <input type="checkbox" name="skills" value="python" />
-              <span>Python & LLM Tooling</span>
+              <input type="checkbox" id="skill-python" name="skill_python" value="python">
+              <span>Python &amp; LLM Tooling</span>
             </label>
             <label class="choice-item">
-              <input type="checkbox" name="skills" value="chrome-ext" />
+              <input type="checkbox" id="skill-chrome-ext" name="skill_chrome_ext" value="chrome-ext">
               <span>Chrome Extensions / MV3</span>
             </label>
             <label class="choice-item">
-              <input type="checkbox" name="skills" value="react" />
-              <span>React & Modern Web UI</span>
+              <input type="checkbox" id="skill-react" name="skill_react" value="react">
+              <span>React &amp; Modern Web UI</span>
             </label>
           </div>
         </div>
@@ -427,12 +431,12 @@
         <div class="grid-2">
           <div class="form-group">
             <label for="github">GitHub Profile URL</label>
-            <input type="url" id="github" name="github" placeholder="https://github.com/username" />
+            <input type="url" id="github" name="github" placeholder="https://github.com/username">
           </div>
 
           <div class="form-group">
             <label for="linkedin">LinkedIn Profile URL</label>
-            <input type="url" id="linkedin" name="linkedin" placeholder="https://linkedin.com/in/username" />
+            <input type="url" id="linkedin" name="linkedin" placeholder="https://linkedin.com/in/username">
           </div>
         </div>
 
@@ -447,11 +451,11 @@
           <label>Are you authorized to work in India? <span class="req">*</span></label>
           <div class="choice-group">
             <label class="choice-item">
-              <input type="radio" name="auth" value="yes" checked />
+              <input type="radio" id="auth-yes" name="auth" value="yes" checked>
               <span>Yes, authorized to work</span>
             </label>
             <label class="choice-item">
-              <input type="radio" name="auth" value="sponsorship" />
+              <input type="radio" id="auth-sponsorship" name="auth" value="sponsorship">
               <span>Require immigration sponsorship</span>
             </label>
           </div>
@@ -460,7 +464,7 @@
         <!-- Security Guardrail Test Area (Password field - MUST BE QUARANTINED BY SCANNER) -->
         <div class="form-group">
           <label for="accountPassword">Create Application Account Password (Optional Testbed Field)</label>
-          <input type="password" id="accountPassword" name="accountPassword" placeholder="Enter test password (should NOT be scanned)" />
+          <input type="password" id="accountPassword" name="accountPassword" autocomplete="new-password" placeholder="Enter test password (should NOT be scanned)">
           <div class="security-notice">
             <span>🛡️</span>
             <span><strong>Security Guardrail Test:</strong> The Sahayak DOM scanner must strictly quarantine and ignore this password field. It will receive no action ID and will never be touched by the agent.</span>
@@ -468,9 +472,9 @@
         </div>
 
         <!-- Terms Agreement -->
-        <div class="form-group" style="margin-top: 18px;">
+        <div class="form-group form-group-terms">
           <label class="choice-item">
-            <input type="checkbox" id="terms" name="terms" required />
+            <input type="checkbox" id="terms" name="terms" required>
             <span>I certify that all details submitted are accurate and agree to terms.</span>
           </label>
         </div>
@@ -500,7 +504,7 @@
       document.getElementById('linkedin').value = 'https://linkedin.com/in/ramesh-kumar';
       document.getElementById('statement').value = 'Passionate about human-in-the-loop agentic architectures and browser automation safety.';
       document.getElementById('terms').checked = true;
-      document.querySelectorAll('input[name="skills"]').forEach((box, i) => {
+      document.querySelectorAll('input[type="checkbox"][name^="skill_"]').forEach((box, i) => {
         if (i % 2 === 0) box.checked = true;
       });
       showToast('Mock candidate profile filled!');
