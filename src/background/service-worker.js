@@ -5,6 +5,7 @@
 import { STORAGE_KEYS, DEFAULT_CONFIG, GROQ_CONFIG, IPC_MESSAGES } from '../shared/constants.js';
 import { generateContent, streamGenerateContent, findInteractiveElement } from './ai-orchestrator.js';
 import { setupContextMenus, handleContextMenuClick } from './context-menu.js';
+import { stateManager } from './state-manager.js';
 import { DEV_CONFIG } from '../shared/env.js';
 
 // Configure Chrome Side Panel to open automatically when extension action icon is clicked
@@ -97,6 +98,45 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     findInteractiveElement(message.payload || {})
       .then(result => sendResponse(result))
       .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
+  // Phase 3 Slice 3.4: Human-in-the-Loop Agent State Machine Handlers
+  if (message.type === IPC_MESSAGES.START_AGENT_TASK) {
+    stateManager.startTask(message.payload || {})
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
+  if (message.type === IPC_MESSAGES.APPROVE_ACTION) {
+    stateManager.approveStep()
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
+  if (message.type === IPC_MESSAGES.SKIP_ACTION) {
+    stateManager.skipStep(message.reason)
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
+  if (message.type === IPC_MESSAGES.STOP_AGENT_TASK) {
+    const result = stateManager.stopTask();
+    sendResponse(result);
+    return true;
+  }
+
+  if (message.type === IPC_MESSAGES.RESET_AGENT_TASK) {
+    const result = stateManager.resetTask();
+    sendResponse(result);
+    return true;
+  }
+
+  if (message.type === IPC_MESSAGES.GET_AGENT_STATE) {
+    sendResponse({ success: true, state: stateManager.getState() });
     return true;
   }
 

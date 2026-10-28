@@ -2095,6 +2095,21 @@ body {
   gap: 8px;
 }
 
+#btn-toggle-badges {
+  transition: all var(--transition-fast);
+}
+
+#btn-toggle-badges.active {
+  background: rgba(37, 99, 235, 0.22) !important;
+  border-color: #3b82f6 !important;
+  color: #93c5fd !important;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4) !important;
+}
+
+#btn-toggle-badges.active svg {
+  stroke: #60a5fa !important;
+}
+
 /* Agent Empty State */
 .agent-empty-state {
   display: flex;
@@ -2305,7 +2320,7 @@ body {
 }
 
 .scanned-element-card.card-consequential {
-  border-left: 3px solid #f59e0b;
+  border-left: 3px solid #dc2626;
 }
 
 .element-card-header {
@@ -2653,6 +2668,603 @@ body {
   flex-shrink: 0;
   font-size: 0.7rem;
   padding: 4px 8px;
+}
+
+/* ==========================================================================
+   Phase 3 Slice 3.4: Human-in-the-Loop Errand Runner & Action Proposal Card
+   ========================================================================== */
+
+.errand-section {
+  padding: 8px 14px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Errand Runner Launcher Card */
+.errand-runner-card {
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(139, 92, 246, 0.06) 100%);
+  border: 1px solid rgba(59, 130, 246, 0.28);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.errand-runner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.errand-runner-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.errand-runner-title h4 {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.errand-badge-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  background: rgba(37, 99, 235, 0.2);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+}
+
+.errand-subtitle {
+  font-size: 0.73rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0 0 10px;
+}
+
+.errand-input-row {
+  margin-bottom: 8px;
+}
+
+.errand-input-wrapper {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.errand-goal-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  padding: 7px 11px;
+  font-size: 0.78rem;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.errand-goal-input:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  outline: none;
+}
+
+#btn-start-errand {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 7px 12px;
+}
+
+.errand-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.errand-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  padding: 2px 9px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.errand-chip:hover {
+  background: rgba(59, 130, 246, 0.16);
+  border-color: rgba(59, 130, 246, 0.45);
+  color: #93c5fd;
+}
+
+.errand-options-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding-top: 4px;
+}
+
+.errand-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.errand-limit-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.errand-limit-select {
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  border-radius: 4px;
+  font-size: 0.72rem;
+  padding: 2px 4px;
+}
+
+/* ==========================================================================
+   Action Proposal Card (HITL Single-Step Decision Interface)
+   ========================================================================== */
+
+.action-proposal-card {
+  background: linear-gradient(145deg, rgba(15, 23, 42, 0.98), rgba(30, 41, 59, 0.95));
+  border: 1.5px solid rgba(245, 158, 11, 0.5);
+  border-radius: var(--radius-lg);
+  padding: 13px 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 16px rgba(245, 158, 11, 0.15);
+  animation: fadeIn 0.25s ease-out;
+}
+
+.action-proposal-card.hidden {
+  display: none !important;
+}
+
+.proposal-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.proposal-status-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-pill.status-amber {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fbbf24;
+}
+
+.status-pill.status-amber .status-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.9);
+}
+
+.status-pill.status-executing {
+  background: rgba(0, 229, 255, 0.15);
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  color: #67e8f9;
+}
+
+.status-pill.status-executing .status-dot {
+  background: #00e5ff;
+  box-shadow: 0 0 6px rgba(0, 229, 255, 0.9);
+}
+
+.proposal-step-pill {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-family: 'SF Mono', Consolas, monospace;
+}
+
+.btn-proposal-stop {
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #f87171;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-proposal-stop:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
+
+.proposal-goal-row {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  margin-bottom: 11px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  gap: 6px;
+}
+
+.proposal-goal-row .goal-label {
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.proposal-goal-row .goal-text {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Proposal Target Box */
+.proposal-target-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  padding: 8px 12px;
+  margin-bottom: 10px;
+}
+
+.proposal-target-info {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.proposal-action-pill {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.proposal-action-pill.type {
+  background: #2563eb;
+  color: #fff;
+}
+
+.proposal-action-pill.click {
+  background: #10b981;
+  color: #fff;
+}
+
+.proposal-action-pill.select {
+  background: #8b5cf6;
+  color: #fff;
+}
+
+.proposal-action-pill.scroll {
+  background: #06b6d4;
+  color: #fff;
+}
+
+.proposal-action-pill.done {
+  background: #22c55e;
+  color: #fff;
+}
+
+.proposal-target-badge {
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  font-family: 'SF Mono', Consolas, monospace;
+}
+
+.proposal-target-label {
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.btn-refocus-proposal {
+  font-size: 0.68rem;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-refocus-proposal:hover {
+  background: rgba(245, 158, 11, 0.28);
+}
+
+/* Proposed Value */
+.proposal-value-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 10px;
+}
+
+.proposal-value-row.hidden {
+  display: none !important;
+}
+
+.value-title {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.proposal-value-code {
+  color: #38bdf8;
+  font-family: 'SF Mono', Consolas, monospace;
+  font-weight: 600;
+}
+
+/* Reason Box */
+.proposal-reason-box {
+  display: flex;
+  gap: 8px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-md);
+  padding: 9px 11px;
+  margin-bottom: 12px;
+}
+
+.reason-icon {
+  font-size: 0.95rem;
+  flex-shrink: 0;
+}
+
+.reason-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.reason-label {
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #f59e0b;
+  letter-spacing: 0.4px;
+}
+
+.reason-text {
+  font-size: 0.78rem;
+  color: var(--text-primary);
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* Consequential Banner */
+.proposal-consequential-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(220, 38, 38, 0.12);
+  border: 1px solid rgba(220, 38, 38, 0.5);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  color: #fca5a5;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  margin-bottom: 12px;
+}
+
+.proposal-consequential-banner.hidden {
+  display: none !important;
+}
+
+/* Proposal Decision Buttons Group */
+.proposal-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn-approve {
+  flex: 2;
+  background: #16a34a !important;
+  border-color: #22c55e !important;
+  color: #fff !important;
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.35);
+  transition: all var(--transition-fast);
+}
+
+.btn-approve:hover {
+  background: #15803d !important;
+  box-shadow: 0 0 16px rgba(34, 197, 94, 0.6);
+  transform: translateY(-1px);
+}
+
+.btn-skip {
+  flex: 1;
+  font-size: 0.74rem;
+  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.btn-stop {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border-color: rgba(239, 68, 68, 0.35) !important;
+  color: #f87171 !important;
+  font-size: 0.74rem;
+  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.btn-stop:hover {
+  background: rgba(239, 68, 68, 0.28) !important;
+}
+
+/* Stage Loaders */
+.proposal-stage-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 12px;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.proposal-stage-loader.hidden {
+  display: none !important;
+}
+
+/* Terminal States (Completed & Stopped) */
+.proposal-terminal-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 14px 10px;
+}
+
+.proposal-terminal-card.hidden {
+  display: none !important;
+}
+
+.terminal-icon {
+  font-size: 1.8rem;
+  margin-bottom: 6px;
+}
+
+.proposal-terminal-card h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+}
+
+.proposal-terminal-card p {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  margin: 0 0 12px;
+}
+
+/* History Accordion */
+.proposal-history-drawer {
+  margin-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 8px;
+}
+
+.history-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.history-drawer-header:hover {
+  color: var(--text-primary);
+}
+
+.history-steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.history-steps-list.hidden {
+  display: none !important;
+}
+
+.history-step-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 0.71rem;
+}
+
+.history-step-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.history-decision-pill {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.history-decision-pill.approved {
+  background: rgba(34, 197, 94, 0.18);
+  color: #4ade80;
+}
+
+.history-decision-pill.skipped {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+}
+
+.history-decision-pill.stopped {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
 }
 
 

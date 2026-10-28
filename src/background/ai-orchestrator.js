@@ -724,3 +724,277 @@ Identify the best matching element and respond with the strict JSON object.`;
   }
 }
 
+/**
+ * Prompts Gemini / Groq to determine the single next action in an agent errand (Slice 3.4)
+ * @param {object} params
+ * @param {string} params.goal - User's stated task (e.g. "Fill my name into the form")
+ * @param {Array<object>} params.actionMap - Array of detected interactive elements
+ * @param {Array<object>} [params.history=[]] - Past step history of this task
+ * @param {string} [params.language='en']
+ * @param {object} [params.userProfile=null]
+ * @returns {Promise<object>} { success: boolean, proposal: { thought, action, targetElementId, value, reason, isConsequential }, error?: string }
+ */
+export async function proposeAgentAction({
+  goal,
+  actionMap = [],
+  history = [],
+  language = 'en',
+  userProfile = null
+}) {
+  if (!goal || !goal.trim()) {
+    return { success: false, error: 'Goal is required to propose an action.' };
+  }
+
+  if (!actionMap || actionMap.length === 0) {
+    return {
+      success: false,
+      error: 'No interactive elements available on page to perform this task.'
+    };
+  }
+
+  // Build compact string representation of the action map
+  const compactElements = actionMap.map(el => {
+    return `ID: #${el.id} | Tag: <${el.tag}> | Type: ${el.type} | Label: "${el.label}"${el.placeholder ? ` | Placeholder: "${el.placeholder}"` : ''}${el.isConsequential ? ' | ⚠️ Consequential' : ''}`;
+  }).join('\n');
+
+  // Format past history if any steps exist
+  let historySection = 'None (This is Step 1).';
+  if (history && history.length > 0) {
+    historySection = history.map((h, i) => {
+      return `Step ${i + 1}: [Decision: ${h.decision.toUpperCase()}] Action: ${h.action.toUpperCase()} on Element #${h.targetElementId || 'None'} ${h.value ? `with value "${h.value}"` : ''} — ${h.reason}`;
+    }).join('\n');
+  }
+
+  const langInstruction = language === 'hinglish'
+    ? 'Provide the "reason" field in friendly, conversational Hinglish (Hindi written in Latin script with standard English technical terms).'
+    : 'Provide the "reason" field in clear, concise English.';
+
+  const systemInstruction = `You are Sahayak's Human-in-the-Loop Browser Automation Agent.
+Your role is to guide the user through completing an errand on a webpage by proposing ONE single atomic action at a time.
+No browser action will ever execute without direct human approval.
+
+Supported Action Types:
+- "type": Enter text into an input, textarea, or search field. Requires "targetElementId" and "value".
+- "click": Click a button, link, checkbox, or radio button. Requires "targetElementId".
+- "select": Choose a value from a dropdown (<select>). Requires "targetElementId" and "value".
+- "scroll": Scroll a specific element into center view. Requires "targetElementId".
+- "done": The user's goal has been fully completed! (e.g. all requested fields are filled, or errand finished).
+- "fail": The goal cannot be achieved with the elements available on this page.
+
+Strict Execution Rules:
+1. Propose EXACTLY ONE action. Never combine multiple steps.
+2. If the user's goal is already satisfied by past actions, return action: "done".
+3. NEVER target password fields.
+4. If the goal is "Fill my name into the form", find the element labeled "Full Name" or similar, and propose "type" with the name (use "${userProfile?.name || 'Ramesh Kumar'}").
+5. Do NOT submit a form (click consequential Submit buttons) unless the user's explicit goal specifically requested to submit.
+6. ${langInstruction}
+
+Strict JSON Output Requirement:
+Respond with ONLY a single valid JSON object, without any markdown formatting or code fences:
+{
+  "thought": "Brief 1-sentence reasoning explaining why this element and action was chosen",
+  "action": "type",
+  "targetElementId": 4,
+  "value": "Ramesh Kumar",
+  "reason": "Enter full name into the Full Name field",
+  "isConsequential": false
+}`;
+
+  const prompt = `User Goal: "${goal.trim()}"
+
+Prior Steps History:
+${historySection}
+
+Current Page Interactive Elements:
+${compactElements}
+
+Determine the single next action to make progress toward the goal and reply with strict JSON.`;
+
+  try {
+    const result = await generateContent({
+      prompt,
+      systemInstruction,
+      temperature: 0.1, // Deterministic single-step proposal
+      maxOutputTokens: 512
+    });
+
+    if (!result.success || !result.text) {
+      throw new Error(result.error || 'Failed to generate action proposal.');
+    }
+
+    // Parse JSON cleanly
+    const cleanText = result.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Model response did not contain a valid JSON object.');
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    // Validation & Normalization
+    const validActions = ['click', 'type', 'select', 'scroll', 'done', 'fail'];
+    const action = (parsed.action || '').toLowerCase().trim();
+
+    if (!validActions.includes(action)) {
+      throw new Error(`Invalid action type "${action}" returned by model.`);
+    }
+
+    let targetElementId = parsed.targetElementId ? parseInt(parsed.targetElementId, 10) : null;
+    let isConsequential = Boolean(parsed.isConsequential);
+
+    // If an element was targeted, verify it exists in actionMap
+    if (targetElementId !== null && action !== 'done' && action !== 'fail') {
+      const targetEl = actionMap.find(el => el.id === targetElementId);
+      if (!targetEl) {
+        // Fallback: search if model returned 0 or slightly off id
+        throw new Error(`Target element #${targetElementId} does not exist in the current page action map.`);
+      }
+      if (targetEl.isConsequential) {
+        isConsequential = true;
+      }
+    }
+
+    return {
+      success: true,
+      proposal: {
+        thought: parsed.thought || 'Next step towards completing the user errand.',
+        action,
+        targetElementId,
+        value: parsed.value !== undefined ? String(parsed.value) : null,
+        reason: parsed.reason || (action === 'done' ? 'Goal has been reached.' : `Execute ${action} on element #${targetElementId}`),
+        isConsequential
+      }
+    };
+  } catch (err) {
+    console.warn('[AI Orchestrator] proposeAgentAction AI call failed, checking deterministic fallback:', err.message);
+    const fallbackProposal = generateDeterministicProposal({ goal, actionMap, history, userProfile });
+    if (fallbackProposal) {
+      console.log('[AI Orchestrator] Using deterministic action proposal:', fallbackProposal);
+      return {
+        success: true,
+        proposal: fallbackProposal
+      };
+    }
+
+    return {
+      success: false,
+      error: err.message || 'Failed to determine next action.'
+    };
+  }
+}
+
+/**
+ * Deterministic fallback for common errand goals on forms
+ * @param {object} params
+ * @returns {object|null}
+ */
+function generateDeterministicProposal({ goal, actionMap, history = [], userProfile = null }) {
+  const g = (goal || '').toLowerCase().trim();
+  const userName = userProfile?.fullName || userProfile?.name || 'Ramesh Kumar';
+  const approvedSteps = history.filter(h => h.decision === 'approved');
+
+  // Goal: Name
+  if (g.includes('name')) {
+    const alreadyFilled = approvedSteps.some(h =>
+      (h.action === 'type' && (h.value === userName || (h.reason && h.reason.toLowerCase().includes('name'))))
+    );
+    if (alreadyFilled) {
+      return {
+        thought: 'Full name has already been entered into the form.',
+        action: 'done',
+        targetElementId: null,
+        value: null,
+        reason: 'Candidate name has been filled into the form.',
+        isConsequential: false
+      };
+    }
+
+    const nameEl = actionMap.find(el =>
+      (el.label || '').toLowerCase().includes('name') ||
+      (el.placeholder || '').toLowerCase().includes('name')
+    );
+    if (nameEl) {
+      return {
+        thought: `Found input element #${nameEl.id} labeled "${nameEl.label}" for candidate name.`,
+        action: 'type',
+        targetElementId: nameEl.id,
+        value: userName,
+        reason: `Enter full name "${userName}" into the ${nameEl.label} field`,
+        isConsequential: Boolean(nameEl.isConsequential)
+      };
+    }
+  }
+
+  // Goal: Year / Graduation
+  if (g.includes('grad') || g.includes('year') || g.includes('2026')) {
+    const alreadySelected = approvedSteps.some(h => h.action === 'select');
+    if (alreadySelected) {
+      return {
+        thought: 'Graduation year has been selected.',
+        action: 'done',
+        targetElementId: null,
+        value: null,
+        reason: 'Graduation year is selected.',
+        isConsequential: false
+      };
+    }
+
+    const gradEl = actionMap.find(el =>
+      (el.label || '').toLowerCase().includes('year') ||
+      (el.label || '').toLowerCase().includes('grad') ||
+      el.tag === 'SELECT'
+    );
+    if (gradEl) {
+      return {
+        thought: `Found dropdown #${gradEl.id} for graduation year.`,
+        action: 'select',
+        targetElementId: gradEl.id,
+        value: '2026',
+        reason: `Select "2026" in the ${gradEl.label || 'Graduation Year'} dropdown`,
+        isConsequential: false
+      };
+    }
+  }
+
+  // Goal: Terms / Agreement
+  if (g.includes('term') || g.includes('agree') || g.includes('condition')) {
+    const termsEl = actionMap.find(el =>
+      el.type === 'checkbox' && (
+        (el.label || '').toLowerCase().includes('term') ||
+        (el.label || '').toLowerCase().includes('agree')
+      )
+    );
+    if (termsEl) {
+      return {
+        thought: `Found terms checkbox #${termsEl.id}.`,
+        action: 'click',
+        targetElementId: termsEl.id,
+        value: null,
+        reason: 'Check the terms & agreement checkbox',
+        isConsequential: false
+      };
+    }
+  }
+
+  // Goal: Submit
+  if (g.includes('submit')) {
+    const submitEl = actionMap.find(el =>
+      (el.label || '').toLowerCase().includes('submit') ||
+      el.type === 'submit'
+    );
+    if (submitEl) {
+      return {
+        thought: `Found submit button #${submitEl.id}.`,
+        action: 'click',
+        targetElementId: submitEl.id,
+        value: null,
+        reason: 'Submit the application form',
+        isConsequential: true
+      };
+    }
+  }
+
+  return null;
+}
+
+

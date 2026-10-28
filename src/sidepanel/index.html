@@ -475,6 +475,175 @@
 
           <!-- Scanned Content Container (Hidden until scanned) -->
           <div class="agent-scanned-content hidden" id="agent-scanned-content">
+            <!-- Human-in-the-Loop Browser Errand Runner & Proposal Card (Phase 3 Slice 3.4) -->
+            <div class="errand-section" id="errand-section">
+              <!-- Task Launcher Card -->
+              <div class="errand-runner-card" id="errand-runner-card">
+                <div class="errand-runner-header">
+                  <div class="errand-runner-title">
+                    <span class="errand-icon">🎯</span>
+                    <h4>Browser Errand Runner (HITL)</h4>
+                  </div>
+                  <span class="errand-badge-pill">Human-in-the-Loop</span>
+                </div>
+                <p class="errand-subtitle">Formulates single-step proposals. Zero execution occurs without your direct approval.</p>
+
+                <div class="errand-input-row">
+                  <div class="errand-input-wrapper">
+                    <input
+                      type="text"
+                      id="errand-goal-input"
+                      class="errand-goal-input"
+                      placeholder="What should Sahayak do? (e.g. Fill my name into the form)..."
+                      maxlength="200"
+                    >
+                    <button type="button" id="btn-start-errand" class="btn btn-primary btn-sm" title="Start errand with single-step human approval">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                      </svg>
+                      <span>Start Errand</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Quick Errand Suggestion Chips -->
+                <div class="errand-chips-row" id="errand-chips-row">
+                  <button type="button" class="errand-chip" data-goal="Fill my name into the form">Fill my name</button>
+                  <button type="button" class="errand-chip" data-goal="Select 2026 graduation year">Select 2026 year</button>
+                  <button type="button" class="errand-chip" data-goal="Accept terms and conditions">Accept terms</button>
+                  <button type="button" class="errand-chip" data-goal="Submit the application form">Submit form</button>
+                </div>
+
+                <div class="errand-options-row">
+                  <label class="errand-checkbox-label" title="Dry-run highlights each proposed element without dispatching click or type events">
+                    <input type="checkbox" id="chk-errand-dry-run">
+                    <span>Dry-Run Mode (Highlight only)</span>
+                  </label>
+                  <div class="errand-limit-wrap">
+                    <span class="errand-limit-label">Step Limit:</span>
+                    <select id="select-errand-max-steps" class="errand-limit-select">
+                      <option value="5">5</option>
+                      <option value="10" selected>10</option>
+                      <option value="15">15</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Action Proposal Card (Active when task is running / AWAITING_APPROVAL) -->
+              <div class="action-proposal-card hidden" id="action-proposal-card">
+                <div class="proposal-card-header">
+                  <div class="proposal-status-group">
+                    <div class="status-pill status-amber" id="proposal-status-pill">
+                      <span class="status-dot"></span>
+                      <span id="proposal-status-text">Awaiting Approval</span>
+                    </div>
+                    <span class="proposal-step-pill" id="proposal-step-counter">Step 1 of 10</span>
+                  </div>
+                  <button type="button" class="btn-proposal-stop" id="btn-stop-errand-top" title="Halt errand immediately">⏹ Stop</button>
+                </div>
+
+                <div class="proposal-goal-row">
+                  <span class="goal-label">Goal:</span>
+                  <span class="goal-text" id="proposal-goal-text">Fill my name into the form</span>
+                </div>
+
+                <!-- Proposal Body (Visible when AWAITING_APPROVAL) -->
+                <div class="proposal-body" id="proposal-body">
+                  <div class="proposal-target-box">
+                    <div class="proposal-target-info">
+                      <span class="proposal-action-pill" id="proposal-action-type">TYPE</span>
+                      <span class="proposal-target-badge" id="proposal-target-id">#1</span>
+                      <strong class="proposal-target-label" id="proposal-target-label">Full Name</strong>
+                    </div>
+                    <button type="button" class="btn-refocus-proposal" id="btn-refocus-proposal" title="Pulse target element on page again">
+                      <span>Pulse Target</span>
+                    </button>
+                  </div>
+
+                  <div class="proposal-value-row hidden" id="proposal-value-row">
+                    <span class="value-title">Proposed Input Value:</span>
+                    <code class="proposal-value-code" id="proposal-value-code">"Ramesh Kumar"</code>
+                  </div>
+
+                  <div class="proposal-reason-box">
+                    <span class="reason-icon">💡</span>
+                    <div class="reason-content">
+                      <span class="reason-label">Proposed Action Rationale:</span>
+                      <p class="reason-text" id="proposal-reason-text">Enter candidate full name into the Full Name field</p>
+                    </div>
+                  </div>
+
+                  <div class="proposal-consequential-banner hidden" id="proposal-consequential-banner">
+                    <span class="warning-icon">⚠️</span>
+                    <div class="consequential-text">
+                      <strong>Consequential Action:</strong> This action will submit data or trigger a permanent change. Direct confirmation required.
+                    </div>
+                  </div>
+
+                  <!-- Human-in-the-Loop Decision Buttons -->
+                  <div class="proposal-actions-group">
+                    <button type="button" class="btn btn-success btn-approve" id="btn-approve-proposal" title="Approve and execute this single action (Shortcut: Enter)">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      <span>Approve &amp; Execute</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary btn-skip" id="btn-skip-proposal" title="Skip this action and ask AI for an alternative step">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 14 4 9 9 4"/>
+                        <path d="M20 20v-7a4 4 0 0 0-4-4H4"/>
+                      </svg>
+                      <span>Skip Step</span>
+                    </button>
+                    <button type="button" class="btn btn-danger btn-stop" id="btn-stop-proposal" title="Cancel errand immediately">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      </svg>
+                      <span>Stop</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Planning / Scanning Indicator -->
+                <div class="proposal-stage-loader hidden" id="proposal-planning-loader">
+                  <div class="spinner-sm"></div>
+                  <span id="proposal-planning-text">AI is scanning page &amp; formulating next action proposal...</span>
+                </div>
+
+                <!-- Executing Indicator -->
+                <div class="proposal-stage-loader hidden" id="proposal-executing-loader">
+                  <div class="spinner-sm"></div>
+                  <span id="proposal-executing-text">Dispatching synthetic DOM mutation...</span>
+                </div>
+
+                <!-- Completed State Display -->
+                <div class="proposal-terminal-card hidden" id="proposal-completed-card">
+                  <div class="terminal-icon terminal-success">🎉</div>
+                  <h4>Errand Completed!</h4>
+                  <p id="proposal-completed-summary">All requested actions finished successfully under user approval.</p>
+                  <button type="button" class="btn btn-primary btn-sm" id="btn-reset-completed">Start New Errand</button>
+                </div>
+
+                <!-- Stopped / Error State Display -->
+                <div class="proposal-terminal-card hidden" id="proposal-stopped-card">
+                  <div class="terminal-icon terminal-stopped">⏹</div>
+                  <h4 id="proposal-stopped-title">Errand Stopped</h4>
+                  <p id="proposal-stopped-summary">Task halted by user.</p>
+                  <button type="button" class="btn btn-secondary btn-sm" id="btn-reset-stopped">Start New Errand</button>
+                </div>
+
+                <!-- Step Execution History Accordion -->
+                <div class="proposal-history-drawer" id="proposal-history-drawer">
+                  <div class="history-drawer-header" id="btn-toggle-history">
+                    <span class="history-title">Step History (<span id="history-step-count">0</span>)</span>
+                    <span class="history-chevron" id="history-chevron">▼</span>
+                  </div>
+                  <div class="history-steps-list hidden" id="history-steps-list"></div>
+                </div>
+              </div>
+            </div>
+
             <!-- "Find It For Me" Natural Language Locator (Slice 3.3) -->
             <div class="find-locator-card" id="find-locator-card">
               <div class="find-locator-header">

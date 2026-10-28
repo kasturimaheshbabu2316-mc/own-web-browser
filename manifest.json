@@ -31,7 +31,8 @@
         "src/content/readability.js",
         "src/content/extractor.js",
         "src/content/scanner.js",
-        "src/content/overlay.js"
+        "src/content/overlay.js",
+        "src/content/executor.js"
       ],
       "run_at": "document_idle"
     },
