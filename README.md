@@ -110,6 +110,25 @@ Enables controlled browser perception by scanning the active document for all ac
 * **Side Panel Agent View**: Features real-time metrics cards (Total, Inputs, Buttons, Links, Consequential), filter tabs, search filtering, and one-click **Highlight on Page** with smooth scrolling and glowing cyan pulse rings.
 * **Practice Sandbox Testbed**: Includes [`assets/practice/internship-form.html`](file:///c:/Users/kastu/Desktop/Own%20AI%20Browser/assets/practice/internship-form.html) for safe testing of form filling and agent errands.
 
+### 🏷️ Numbered Action Map & Shadow DOM Badges (Phase 3 Slice 3.2)
+
+Renders non-invasive visual badges (`#1`, `#2`, `#3`...) anchored to interactive elements:
+
+* **Closed Shadow DOM Isolation**: Injected within `#sahayak-badge-host` using `host.attachShadow({ mode: 'closed' })` guaranteeing zero style leakage, no page layout shifts, and immunity to host webpage CSS rules.
+* **Scroll & Viewport Tracking**: Continuously synchronizes badge positions on scroll and window resize events via throttled `requestAnimationFrame` loops.
+* **On-Demand Visibility Toggle**: One-click **Show Badges / Hide Badges** button in the Side Panel header lets users toggle visual badges on demand.
+* **Consequential Styling**: Badges on mutation actions (`submit`, `delete`, `pay`) render with distinct amber warning styling.
+
+### 🔍 "Find It For Me" Natural Language Locator (Phase 3 Slice 3.3)
+
+Instantly find any button, input field, or link on a webpage using natural language:
+
+* **Natural Language Queries**: Ask questions like *"Where is the submit button?"*, *"Where do I enter my college?"*, or *"Where are the terms?"*.
+* **Grounded AI Matching**: Prompts Gemini Flash-Lite with the compact action map and query, producing structured JSON `{ found, targetElementId, explanation }`.
+* **Smooth Auto-Scroll**: Smoothly scrolls the target element into the center of the viewport via `element.scrollIntoView({ behavior: 'smooth', block: 'center' })`.
+* **Amber Glowing Pulse**: Emits a prominent glowing amber pulse ring (`.sahayak-find-pulse`) directly around the target element without clicking or mutating the page.
+* **Bilingual Explanations**: Delivers locator explanations in English or colloquial Hinglish matching the active language setting.
+
 ### ⚡ Ultra-Low Latency Streaming UI
 
 Real-time typewriter streaming via Chrome's native streaming port (`sahayak-stream-port`) connected directly to Google's REST streaming API (`gemini-flash-lite-latest`), delivering full summaries in ~2 seconds.
@@ -166,7 +185,8 @@ Own AI Browser/
     │   ├── readability.js     # Bundled Mozilla Readability + isProbablyReaderable
     │   ├── extractor.js       # Cloned DOM content extraction & paywall/SPA defenses
     │   ├── youtube.js         # YouTube video perception, chapters, transcripts & seeking
-    │   └── scanner.js         # DOM interactive element scanner, quarantine & action map
+    │   ├── scanner.js         # DOM interactive element scanner, quarantine & action map
+    │   └── overlay.js         # Closed Shadow DOM numbered badges & amber find glow pulse
     ├── shared/
     │   ├── constants.js       # Storage keys, models, IPC message types & defaults
     │   └── types.js           # Structured IPC message payload schemas

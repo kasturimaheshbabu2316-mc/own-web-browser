@@ -3,7 +3,7 @@
  */
 
 import { STORAGE_KEYS, DEFAULT_CONFIG, GROQ_CONFIG, IPC_MESSAGES } from '../shared/constants.js';
-import { generateContent, streamGenerateContent } from './ai-orchestrator.js';
+import { generateContent, streamGenerateContent, findInteractiveElement } from './ai-orchestrator.js';
 import { setupContextMenus, handleContextMenuClick } from './context-menu.js';
 import { DEV_CONFIG } from '../shared/env.js';
 
@@ -87,6 +87,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === IPC_MESSAGES.GENERATE_CONTENT) {
     generateContent(message.payload || {})
+      .then(result => sendResponse(result))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  }
+
+  // Handle Natural Language "Find It For Me" locator (Slice 3.3)
+  if (message.type === IPC_MESSAGES.FIND_ELEMENT) {
+    findInteractiveElement(message.payload || {})
       .then(result => sendResponse(result))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;

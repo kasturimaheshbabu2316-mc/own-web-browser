@@ -1,14 +1,15 @@
 /**
- * Sahayak Extension - Agent View Component (Phase 3, Slice 3.1)
- * Interactive Element Scanner UI:
+ * Sahayak Extension - Agent View Component (Phase 3, Slices 3.1, 3.2, 3.3)
+ * Interactive Element Scanner & "Find It For Me" Natural Language Locator:
  * - Scans active DOM for interactive elements (buttons, inputs, links, selects)
- * - Excludes password and hidden fields (quarantine guardrail)
+ * - Excludes password and hidden fields (security quarantine guardrail)
  * - Categorizes and flags consequential actions (submit, delete, pay)
  * - Renders sequential numbered action map cards (#1, #2, #3...)
- * - Enables click-to-highlight with smooth page scrolling
+ * - Visual Numbered Badges in closed Shadow DOM overlay (Slice 3.2)
+ * - "Find It For Me" AI natural language element locator with amber glowing pulse (Slice 3.3)
  */
 
-import { IPC_MESSAGES, DEFAULT_CONFIG } from '../../shared/constants.js';
+import { IPC_MESSAGES, DEFAULT_CONFIG, STORAGE_KEYS } from '../../shared/constants.js';
 
 export class AgentView {
   /**
@@ -24,6 +25,10 @@ export class AgentView {
     this.state = {
       activeTab: null,
       isScanning: false,
+      isFinding: false,
+      badgesVisible: false,
+      foundElementId: null,
+      language: DEFAULT_CONFIG.LANGUAGE,
       elements: [], // Array of { id, tag, type, label, placeholder, isConsequential, bounds }
       activeFilter: 'all', // 'all' | 'input' | 'button' | 'link' | 'consequential'
       searchQuery: '',
@@ -32,7 +37,22 @@ export class AgentView {
 
     this.initDOM();
     this.bindEvents();
+    this.loadLanguagePreference();
     this.refreshActiveTabInfo();
+  }
+
+  /**
+   * Loads initial saved language
+   */
+  async loadLanguagePreference() {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        const data = await chrome.storage.local.get([STORAGE_KEYS.LANGUAGE]);
+        if (data[STORAGE_KEYS.LANGUAGE]) {
+          this.state.language = data[STORAGE_KEYS.LANGUAGE];
+        }
+      }
+    } catch (_) {}
   }
 
   /**
@@ -47,11 +67,26 @@ export class AgentView {
       btnScan: this.container.querySelector('#btn-scan-elements'),
       btnScanText: this.container.querySelector('#btn-scan-text'),
       btnOpenPractice: this.container.querySelector('#btn-open-practice'),
+      btnToggleBadges: this.container.querySelector('#btn-toggle-badges'),
+      btnToggleBadgesText: this.container.querySelector('#btn-toggle-badges-text'),
       btnEmptyScan: this.container.querySelector('#btn-empty-scan'),
       btnClearHighlights: this.container.querySelector('#btn-clear-highlights'),
       alertBanner: this.container.querySelector('#agent-alert'),
       emptyState: this.container.querySelector('#agent-empty-state'),
       scannedContent: this.container.querySelector('#agent-scanned-content'),
+
+      // "Find It For Me" DOM references (Slice 3.3)
+      findCard: this.container.querySelector('#find-locator-card'),
+      findQueryInput: this.container.querySelector('#find-query-input'),
+      btnFindSubmit: this.container.querySelector('#btn-find-submit'),
+      findChipsRow: this.container.querySelector('#find-chips-row'),
+      findResultBox: this.container.querySelector('#find-result-box'),
+      findTargetBadge: this.container.querySelector('#find-target-badge'),
+      findResultTitle: this.container.querySelector('#find-result-title'),
+      findResultDesc: this.container.querySelector('#find-result-desc'),
+      btnRefocusFound: this.container.querySelector('#btn-refocus-found'),
+
+      // Metrics & Filters
       metricTotal: this.container.querySelector('#metric-total'),
       metricInputs: this.container.querySelector('#metric-inputs'),
       metricButtons: this.container.querySelector('#metric-buttons'),
@@ -78,6 +113,46 @@ export class AgentView {
     }
     if (this.dom.btnEmptyScan) {
       this.dom.btnEmptyScan.addEventListener('click', () => this.scanActiveTab());
+    }
+
+    // Toggle Badges button (Slice 3.2)
+    if (this.dom.btnToggleBadges) {
+      this.dom.btnToggleBadges.addEventListener('click', () => this.toggleBadges());
+    }
+
+    // "Find It For Me" Locator triggers (Slice 3.3)
+    if (this.dom.btnFindSubmit) {
+      this.dom.btnFindSubmit.addEventListener('click', () => this.handleFindSubmit());
+    }
+
+    if (this.dom.findQueryInput) {
+      this.dom.findQueryInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.handleFindSubmit();
+        }
+      });
+    }
+
+    if (this.dom.findChipsRow) {
+      this.dom.findChipsRow.addEventListener('click', (e) => {
+        const chip = e.target.closest('.find-chip');
+        if (chip) {
+          const query = chip.getAttribute('data-query');
+          if (query) {
+            this.dom.findQueryInput.value = query;
+            this.handleFindSubmit(query);
+          }
+        }
+      });
+    }
+
+    if (this.dom.btnRefocusFound) {
+      this.dom.btnRefocusFound.addEventListener('click', () => {
+        if (this.state.foundElementId) {
+          this.pulseFindTarget(this.state.foundElementId);
+        }
+      });
     }
 
     // Open Practice Form button
@@ -154,6 +229,14 @@ export class AgentView {
   }
 
   /**
+   * Observer callback when user switches language in header
+   * @param {'en' | 'hinglish'} lang
+   */
+  onLanguageChanged(lang) {
+    this.state.language = lang;
+  }
+
+  /**
    * Refreshes active tab title, url, and favicon
    */
   async refreshActiveTabInfo() {
@@ -215,11 +298,11 @@ export class AgentView {
     try {
       return await chrome.tabs.sendMessage(tabId, message);
     } catch (err) {
-      console.log('[AgentView] Tab message not received, attempting dynamic scanner injection...');
+      console.log('[AgentView] Tab message not received, attempting dynamic scanner/overlay injection...');
       try {
         await chrome.scripting.executeScript({
           target: { tabId },
-          files: ['src/content/scanner.js']
+          files: ['src/content/scanner.js', 'src/content/overlay.js']
         });
         await new Promise(r => setTimeout(r, 150));
         return await chrome.tabs.sendMessage(tabId, message);
@@ -276,13 +359,174 @@ export class AgentView {
       this.dom.scannedContent.classList.remove('hidden');
       this.renderFilteredElements();
 
+      // If badges were previously active, refresh their overlay positions
+      if (this.state.badgesVisible) {
+        await this.sendMessageToTab(tab.id, {
+          type: IPC_MESSAGES.RENDER_BADGES,
+          elements: this.state.elements
+        });
+      }
+
       const count = this.state.elements.length;
-      this.showAlert(`Discovered ${count} interactive elements. Click any element to highlight on page.`, 'success');
+      this.showAlert(`Discovered ${count} interactive elements. Click any element or toggle badges to inspect.`, 'success');
     } catch (err) {
       console.error('[AgentView] Scan failed:', err);
       this.showAlert(`Scan failed: ${err.message || 'Please refresh the active webpage and try again.'}`, 'error');
     } finally {
       this.setScanning(false);
+    }
+  }
+
+  /**
+   * Toggles numbered visual badges on the active page (Slice 3.2)
+   * @param {boolean|null} forceState
+   */
+  async toggleBadges(forceState = null) {
+    try {
+      if (this.state.elements.length === 0) {
+        await this.scanActiveTab();
+        if (this.state.elements.length === 0) return;
+      }
+
+      const targetTab = this.state.activeTab || (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+      if (!targetTab) return;
+
+      const newState = forceState !== null ? Boolean(forceState) : !this.state.badgesVisible;
+      this.state.badgesVisible = newState;
+
+      if (newState) {
+        await this.sendMessageToTab(targetTab.id, {
+          type: IPC_MESSAGES.RENDER_BADGES,
+          elements: this.state.elements
+        });
+        if (this.dom.btnToggleBadges) this.dom.btnToggleBadges.classList.add('active');
+        if (this.dom.btnToggleBadgesText) this.dom.btnToggleBadgesText.textContent = 'Hide Badges';
+        this.showAlert(`Visual numbered badges enabled (#1–#${this.state.elements.length}).`, 'info');
+      } else {
+        await this.sendMessageToTab(targetTab.id, {
+          type: IPC_MESSAGES.TOGGLE_BADGES,
+          show: false
+        });
+        if (this.dom.btnToggleBadges) this.dom.btnToggleBadges.classList.remove('active');
+        if (this.dom.btnToggleBadgesText) this.dom.btnToggleBadgesText.textContent = 'Show Badges';
+        this.showAlert('Visual badges hidden.', 'info');
+      }
+    } catch (err) {
+      console.error('[AgentView] Toggle badges failed:', err);
+      this.showAlert(`Could not toggle badges: ${err.message}`, 'error');
+    }
+  }
+
+  /**
+   * Executes "Find It For Me" Natural Language Query (Slice 3.3)
+   * @param {string|null} overrideQuery
+   */
+  async handleFindSubmit(overrideQuery = null) {
+    const query = (overrideQuery || this.dom.findQueryInput?.value || '').trim();
+    if (!query) {
+      this.showAlert('Please enter a query describing what element you want to find.', 'warning');
+      this.dom.findQueryInput?.focus();
+      return;
+    }
+
+    if (this.state.isFinding) return;
+
+    try {
+      this.setFinding(true);
+      this.hideAlert();
+
+      // Ensure elements are scanned
+      if (this.state.elements.length === 0) {
+        await this.scanActiveTab();
+        if (this.state.elements.length === 0) {
+          throw new Error('No interactive elements were found on this page.');
+        }
+      }
+
+      // Query AI orchestrator
+      const response = await chrome.runtime.sendMessage({
+        type: IPC_MESSAGES.FIND_ELEMENT,
+        payload: {
+          query,
+          actionMap: this.state.elements,
+          language: this.state.language
+        }
+      });
+
+      if (!response || !response.success) {
+        throw new Error(response?.error || 'AI locator analysis failed.');
+      }
+
+      if (response.found && response.targetElementId) {
+        this.state.foundElementId = response.targetElementId;
+
+        // Pulse and scroll to target element on active tab
+        await this.pulseFindTarget(response.targetElementId);
+
+        // Update Find Result Box
+        if (this.dom.findResultBox) {
+          this.dom.findResultBox.classList.remove('hidden');
+          this.dom.findResultBox.className = 'find-result-box find-result-success';
+        }
+        if (this.dom.findTargetBadge) {
+          this.dom.findTargetBadge.textContent = `#${response.targetElementId}`;
+          this.dom.findTargetBadge.className = 'find-target-badge badge-found';
+        }
+        if (this.dom.findResultTitle) {
+          this.dom.findResultTitle.textContent = 'Target Element Located';
+        }
+        if (this.dom.findResultDesc) {
+          this.dom.findResultDesc.textContent = response.explanation;
+        }
+
+        // Highlight matching card in the list
+        this.dom.elementsList.querySelectorAll('.scanned-element-card').forEach(card => {
+          const cardId = parseInt(card.getAttribute('data-id'), 10);
+          card.classList.toggle('card-highlighted', cardId === response.targetElementId);
+        });
+
+        this.showAlert(`Located element #${response.targetElementId}. Scrolled and pulsing on page!`, 'success');
+      } else {
+        // Element not found
+        this.state.foundElementId = null;
+        if (this.dom.findResultBox) {
+          this.dom.findResultBox.classList.remove('hidden');
+          this.dom.findResultBox.className = 'find-result-box find-result-notfound';
+        }
+        if (this.dom.findTargetBadge) {
+          this.dom.findTargetBadge.textContent = '✕';
+          this.dom.findTargetBadge.className = 'find-target-badge badge-notfound';
+        }
+        if (this.dom.findResultTitle) {
+          this.dom.findResultTitle.textContent = 'Element Not Found';
+        }
+        if (this.dom.findResultDesc) {
+          this.dom.findResultDesc.textContent = response.explanation || `No element matching "${query}" was found.`;
+        }
+      }
+    } catch (err) {
+      console.error('[AgentView] Find element failed:', err);
+      this.showAlert(`Find failed: ${err.message}`, 'error');
+    } finally {
+      this.setFinding(false);
+    }
+  }
+
+  /**
+   * Pulses target element on active page with amber glow and smooth scroll
+   * @param {number} id
+   */
+  async pulseFindTarget(id) {
+    try {
+      const targetTab = this.state.activeTab || (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+      if (!targetTab || !targetTab.id) return;
+
+      await this.sendMessageToTab(targetTab.id, {
+        type: IPC_MESSAGES.PULSE_FIND_ELEMENT,
+        id
+      });
+    } catch (err) {
+      console.warn('[AgentView] Pulse find element failed:', err);
     }
   }
 
@@ -334,7 +578,7 @@ export class AgentView {
   }
 
   /**
-   * Highlights target element in the active tab
+   * Highlights target element in the active tab (cyan ring)
    * @param {number} id
    */
   async highlightElement(id) {
@@ -364,7 +608,7 @@ export class AgentView {
   }
 
   /**
-   * Clears highlights on page
+   * Clears highlights and badges on page
    */
   async clearHighlights() {
     try {
@@ -503,6 +747,33 @@ export class AgentView {
     }
     if (this.dom.btnEmptyScan) {
       this.dom.btnEmptyScan.disabled = isScanning;
+    }
+  }
+
+  /**
+   * Sets finding button state
+   * @param {boolean} isFinding
+   */
+  setFinding(isFinding) {
+    this.state.isFinding = isFinding;
+    if (this.dom.btnFindSubmit) {
+      this.dom.btnFindSubmit.disabled = isFinding;
+      if (isFinding) {
+        this.dom.btnFindSubmit.classList.add('loading');
+        this.dom.btnFindSubmit.innerHTML = `
+          <div class="spinner-sm"></div>
+          <span>Locating...</span>
+        `;
+      } else {
+        this.dom.btnFindSubmit.classList.remove('loading');
+        this.dom.btnFindSubmit.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span>Locate</span>
+        `;
+      }
     }
   }
 

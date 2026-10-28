@@ -409,6 +409,13 @@
                 </svg>
                 <span>Practice Form</span>
               </button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-badges" title="Toggle numbered visual badges on active page">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="10" r="3"/>
+                </svg>
+                <span id="btn-toggle-badges-text">Show Badges</span>
+              </button>
               <button type="button" class="btn btn-primary btn-sm" id="btn-scan-elements">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="12" cy="12" r="10"/>
@@ -468,6 +475,57 @@
 
           <!-- Scanned Content Container (Hidden until scanned) -->
           <div class="agent-scanned-content hidden" id="agent-scanned-content">
+            <!-- "Find It For Me" Natural Language Locator (Slice 3.3) -->
+            <div class="find-locator-card" id="find-locator-card">
+              <div class="find-locator-header">
+                <div class="find-locator-title">
+                  <span class="find-icon">🔍</span>
+                  <h4>Find It For Me</h4>
+                </div>
+                <span class="find-subtitle">AI natural language locator</span>
+              </div>
+
+              <div class="find-input-row">
+                <div class="find-input-wrapper">
+                  <input
+                    type="text"
+                    id="find-query-input"
+                    class="find-query-input"
+                    placeholder="Where do I find... (e.g. submit button, college name)?"
+                    maxlength="150"
+                  >
+                  <button type="button" id="btn-find-submit" class="btn-find-submit" title="Locate element on page" aria-label="Find element">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="11" cy="11" r="8"/>
+                      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <span>Locate</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Quick query chips -->
+              <div class="find-chips-row" id="find-chips-row">
+                <button type="button" class="find-chip" data-query="Where is the submit button?">Where is submit button?</button>
+                <button type="button" class="find-chip" data-query="Where do I enter my college or university?">Where is college input?</button>
+                <button type="button" class="find-chip" data-query="Where are the terms and agreement?">Where are terms?</button>
+              </div>
+
+              <!-- Find Result Feedback Card (hidden until query is run) -->
+              <div class="find-result-box hidden" id="find-result-box">
+                <div class="find-result-badge-wrap">
+                  <span class="find-target-badge" id="find-target-badge">#0</span>
+                  <div class="find-result-info">
+                    <strong class="find-result-title" id="find-result-title">Target Located</strong>
+                    <span class="find-result-desc" id="find-result-desc">Explanation text</span>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-sm" id="btn-refocus-found" title="Scroll and pulse again">
+                  <span>Pulse Again</span>
+                </button>
+              </div>
+            </div>
+
             <!-- Metrics Summary Grid -->
             <div class="scan-metrics-grid">
               <div class="metric-card">

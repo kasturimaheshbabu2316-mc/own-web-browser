@@ -348,8 +348,8 @@ Provide controlled browser interaction capabilities. Sahayak scans the page for 
 ### Phase 3 Acceptance Criteria
 
 - [x] All interactive elements are detected, classified, and numbered (Slice 3.1).
-- [ ] Numbered badges display seamlessly inside an isolated Shadow DOM.
-- [ ] Natural language search ("Find it for me") scrolls to and highlights target elements.
+- [x] Numbered badges display seamlessly inside an isolated Shadow DOM (Slice 3.2).
+- [x] Natural language search ("Find it for me") scrolls to and highlights target elements (Slice 3.3).
 - [ ] Agent proposes one step at a time via strict JSON schema.
 - [ ] No browser action executes without direct user approval.
 - [ ] Approve, Skip, Stop, dry-run, and step limits function reliably.
@@ -483,8 +483,8 @@ Before publishing the project, execute this end-to-end verification checklist:
 | **Context Menu Actions** | Right-click triggers Explain, Translate, and Draft Reply | [x] |
 | **Multimodal Vision** | Captures tab and correctly analyzes visual diagrams/charts | [x] |
 | **Rate-Limit Resilience** | Retries with backoff and fails over to Groq free tier on 429 | [x] |
-| **DOM Scanner & Badges** | Assigns stable numbers in closed Shadow DOM overlay | [ ] |
-| **Find It For Me** | Natural language query scrolls to and highlights target element | [ ] |
+| **DOM Scanner & Badges** | Assigns stable numbers in closed Shadow DOM overlay | [x] |
+| **Find It For Me** | Natural language query scrolls to and highlights target element | [x] |
 | **Human-in-the-Loop Loop** | No DOM action occurs without user clicking "Approve" | [ ] |
 | **Safety Guardrails** | Blocks banking domains, password fields, and OTP inputs | [ ] |
 | **Consequential Action Gate** | Requires secondary confirmation for Submit/Pay buttons | [ ] |

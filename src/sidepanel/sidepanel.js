@@ -448,6 +448,11 @@ function updateLanguageUI(lang) {
   if (chatView && typeof chatView.onLanguageChanged === 'function') {
     chatView.onLanguageChanged(lang);
   }
+
+  // Notify AgentView of active language change
+  if (agentView && typeof agentView.onLanguageChanged === 'function') {
+    agentView.onLanguageChanged(lang);
+  }
 }
 
 /**

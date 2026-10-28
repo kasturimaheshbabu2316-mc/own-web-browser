@@ -632,3 +632,95 @@ export async function getSavedGroqApiKey() {
     return '';
   }
 }
+
+/**
+ * Prompts Gemini / Groq to locate an interactive element based on a user's natural language query (Slice 3.3)
+ * @param {object} params
+ * @param {string} params.query - e.g. "Where do I submit?" or "Find the email input"
+ * @param {Array<object>} params.actionMap - Compact action map array from scanner.js
+ * @param {string} [params.language='en']
+ * @returns {Promise<object>} { success: boolean, found: boolean, targetElementId: number|null, explanation: string }
+ */
+export async function findInteractiveElement({ query, actionMap = [], language = 'en' }) {
+  if (!query || !query.trim()) {
+    return { success: false, error: 'Query is required.' };
+  }
+
+  if (!actionMap || actionMap.length === 0) {
+    return {
+      success: true,
+      found: false,
+      targetElementId: null,
+      explanation: 'No interactive elements were detected on this page.'
+    };
+  }
+
+  // Build compact string representation of the action map
+  const compactList = actionMap.map(el => {
+    return `ID: #${el.id} | Tag: <${el.tag}> | Type: ${el.type} | Label: "${el.label}"${el.placeholder ? ` | Placeholder: "${el.placeholder}"` : ''}${el.isConsequential ? ' | ⚠️ Consequential' : ''}`;
+  }).join('\n');
+
+  const langInstruction = language === 'hinglish'
+    ? 'Provide the explanation in conversational, friendly Hinglish (Hindi written in Latin script with standard English technical terms).'
+    : 'Provide the explanation in clear, concise English.';
+
+  const systemInstruction = `You are Sahayak's "Find It For Me" DOM Navigator.
+Given a user query and a list of interactive elements detected on the current webpage, determine which element best satisfies what the user is looking for.
+${langInstruction}
+
+Strict JSON Output Requirement:
+You MUST reply with ONLY a single valid JSON object, without any markdown formatting or code fences:
+{
+  "found": true,
+  "targetElementId": 21,
+  "explanation": "Brief explanation pointing out what element was found and why"
+}
+If no element on the page matches what the user is asking for, return:
+{
+  "found": false,
+  "targetElementId": null,
+  "explanation": "Brief explanation stating the element could not be found on this page"
+}`;
+
+  const prompt = `User Query: "${query.trim()}"
+
+Webpage Interactive Elements List:
+${compactList}
+
+Identify the best matching element and respond with the strict JSON object.`;
+
+  try {
+    const result = await generateContent({
+      prompt,
+      systemInstruction,
+      temperature: 0.1, // High determinism
+      maxOutputTokens: 512
+    });
+
+    if (!result.success || !result.text) {
+      throw new Error(result.error || 'Failed to generate locator response.');
+    }
+
+    // Parse JSON safely
+    const cleanText = result.text.replace(/```json/gi, '').replace(/```/g, '').trim();
+    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      throw new Error('Could not parse locator response as JSON.');
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return {
+      success: true,
+      found: Boolean(parsed.found && parsed.targetElementId),
+      targetElementId: parsed.targetElementId ? parseInt(parsed.targetElementId, 10) : null,
+      explanation: parsed.explanation || (parsed.found ? `Found element #${parsed.targetElementId}` : 'Could not find a matching element on this page.')
+    };
+  } catch (err) {
+    console.error('[AI Orchestrator] findInteractiveElement failed:', err);
+    return {
+      success: false,
+      error: err.message || 'Locator analysis failed.'
+    };
+  }
+}
+

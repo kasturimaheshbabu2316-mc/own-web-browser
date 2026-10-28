@@ -2441,4 +2441,219 @@ body {
   font-size: 1.6rem;
 }
 
+/* ==========================================================================
+   Phase 3 Slices 3.2 & 3.3: Visual Badges & "Find It For Me" Locator Styles
+   ========================================================================== */
+
+/* Badge Toggle Active State */
+#btn-toggle-badges.active {
+  background: var(--accent-primary);
+  color: #ffffff;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.4);
+}
+
+/* "Find It For Me" Locator Card (Slice 3.3) */
+.find-locator-card {
+  margin: 10px 14px 4px;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(17, 24, 39, 0.85) 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.find-locator-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.find-locator-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.find-locator-title h4 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.find-icon {
+  font-size: 0.9rem;
+}
+
+.find-subtitle {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.find-input-row {
+  display: flex;
+  width: 100%;
+}
+
+.find-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 6px;
+}
+
+.find-query-input {
+  flex: 1;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  padding: 7px 11px;
+  outline: none;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.find-query-input:focus {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+.btn-find-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #d97706;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 7px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn-find-submit:hover {
+  background: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.45);
+}
+
+.btn-find-submit.loading {
+  opacity: 0.75;
+  cursor: wait;
+}
+
+/* Quick Query Suggestion Chips */
+.find-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.find-chip {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  padding: 2px 9px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.find-chip:hover {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+}
+
+/* Find Result Feedback Card */
+.find-result-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  gap: 10px;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.find-result-box.hidden {
+  display: none !important;
+}
+
+.find-result-success {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+.find-result-notfound {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.find-result-badge-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+}
+
+.find-target-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: var(--radius-full);
+  font-family: 'SF Mono', Consolas, monospace;
+  font-size: 0.76rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.find-target-badge.badge-found {
+  background: #f59e0b;
+  color: #020617;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.find-target-badge.badge-notfound {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.find-result-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.find-result-title {
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.find-result-desc {
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+#btn-refocus-found {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+}
+
+
 
