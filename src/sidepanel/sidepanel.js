@@ -5,9 +5,11 @@
 import { STORAGE_KEYS, DEFAULT_CONFIG, IPC_MESSAGES } from '../shared/constants.js';
 import { DEV_CONFIG } from '../shared/env.js';
 import { SummaryView } from './components/summary-view.js';
+import { ChatView } from './components/chat-view.js';
 
 // Component References
 let summaryView = null;
+let chatView = null;
 
 // DOM Element References
 const elements = {
@@ -67,6 +69,14 @@ function initSubComponents() {
       onNavigateToSettings: () => switchTab('settings')
     });
   }
+
+  const chatContainer = document.getElementById('view-chat');
+  if (chatContainer) {
+    chatView = new ChatView({
+      container: chatContainer,
+      onNavigateToSettings: () => switchTab('settings')
+    });
+  }
 }
 
 /**
@@ -100,6 +110,8 @@ function switchTab(tabName) {
 
   if (tabName === 'summary' && summaryView) {
     summaryView.refreshActiveTabInfo();
+  } else if (tabName === 'chat' && chatView) {
+    chatView.onTabActivated();
   }
 }
 
@@ -367,6 +379,11 @@ function updateLanguageUI(lang) {
   // Notify SummaryView of active language change
   if (summaryView && typeof summaryView.onLanguageChanged === 'function') {
     summaryView.onLanguageChanged(lang);
+  }
+
+  // Notify ChatView of active language change
+  if (chatView && typeof chatView.onLanguageChanged === 'function') {
+    chatView.onLanguageChanged(lang);
   }
 }
 

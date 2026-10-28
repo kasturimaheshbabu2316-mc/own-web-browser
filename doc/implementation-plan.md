@@ -226,7 +226,7 @@ Turn the side panel into an active conversational partner that answers questions
 
 ### Phase 2 Acceptance Criteria
 
-- [ ] Chat responds accurately using only page context, refusing ungrounded queries.
+- [x] Chat responds accurately using only page context, refusing ungrounded queries (Slice 2.1).
 - [ ] Right-click context menus trigger Explain, Translate, and Draft reply.
 - [ ] Screenshot-and-ask captures visible screen regions and accurately answers visual questions.
 - [ ] Throttling and rate limits fail over to the Groq fallback provider seamlessly.
@@ -479,7 +479,7 @@ Before publishing the project, execute this end-to-end verification checklist:
 | **Article Summarization** | Outputs TL;DR, 5 points, next steps from Readability.js | [x] |
 | **YouTube Navigation** | Generates chapter breakdown with functional timestamp seeking | [x] |
 | **Bilingual Toggle** | Seamlessly alternates between English and colloquial Hinglish | [x] |
-| **Grounded Page Chat** | Answers strictly from page context; declines ungrounded queries | [ ] |
+| **Grounded Page Chat** | Answers strictly from page context; declines ungrounded queries | [x] |
 | **Context Menu Actions** | Right-click triggers Explain, Translate, and Draft Reply | [ ] |
 | **Multimodal Vision** | Captures tab and correctly analyzes visual diagrams/charts | [ ] |
 | **Rate-Limit Resilience** | Retries with backoff and fails over to Groq free tier on 429 | [ ] |

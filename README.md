@@ -57,6 +57,16 @@ Switch instantly using the top header segment control (`EN` / `Hinglish`):
 * **Conversational Hinglish**: Natural, colloquial Hindi-English mixing written in the Latin alphabet while retaining all technical and domain terms (e.g., *"Yeh video explain karta hai ki microservices architecture kaise scale hoti hai..."*).
 * **Storage Synchronization**: Preferences persist locally via `chrome.storage.local` across sessions and sync bidirectionally with Settings.
 
+### 💬 Grounded Page Chat Engine (Slice 2.1)
+
+Conversational chat in the Side Panel strictly grounded in the active browser tab's content:
+
+* **Strict Negative Constraint**: When a user queries information absent from the page (e.g., general trivia, outside facts), the assistant strictly refuses: *"I cannot find this information in the current page."*
+* **Multi-Turn Session Memory**: In-memory message history tracks questions and follow-ups within the active reading session.
+* **Bilingual Support**: Answers fluently in standard English or natural conversational Hinglish matching the active language toggle.
+* **Context Synchronization Bar**: Displays live word count and page metadata with a one-click **Sync** button to re-read updated page DOM.
+* **Suggestion Chips & Copy Actions**: One-click prompt chips for quick page exploration and direct copy buttons for AI replies.
+
 ### ⚡ Ultra-Low Latency Streaming UI
 
 Real-time typewriter streaming via Chrome's native streaming port (`sahayak-stream-port`) connected directly to Google's REST streaming API (`gemini-flash-lite-latest`), delivering full summaries in ~2 seconds.
@@ -119,7 +129,8 @@ Own AI Browser/
         ├── sidepanel.css      # Dark mode design system & micro-animations
         ├── sidepanel.js       # Side panel controller & preferences manager
         ├── components/
-        │   └── summary-view.js # Article summarizer view, streaming renderer & clipboard
+        │   ├── summary-view.js # Article summarizer view, streaming renderer & clipboard
+        │   └── chat-view.js    # Grounded page chat view, multi-turn history & suggestions
         └── lib/
             └── readability.js # Readability module for sidepanel operations
 ```
@@ -157,7 +168,7 @@ cd own-web-browser
 1. Click the puzzle icon (🧩) in Chrome's toolbar and open **Sahayak - AI Browser Assistant**.
 2. Go to the **Settings** tab.
 3. Paste your free Gemini API Key and click **Save Settings** (or click **Test Connection** to verify live latency).
-4. You are ready! Navigate to any article and click **"Summarize Page"**.
+4. You are ready! Navigate to any article and click **"Summarize Page"**, or open the **Chat** tab to converse with the page.
 
 ---
 
@@ -174,7 +185,7 @@ cd own-web-browser
 | Phase | Focus Area | Status | Deliverables |
 | :--- | :--- | :---: | :--- |
 | **Phase 1** | **The Eyes: Read & Extract** | 🟢 Complete | MV3 Shell, Gemini Streaming, Cloned Readability, YouTube Timestamps, Hinglish Toggle |
-| **Phase 2** | **The Brain: Ground & Understand** | ⚪ Planned | Grounded Page Chat, Context Menus (Explain/Draft), Screenshot-and-Ask, Groq Fallback |
+| **Phase 2** | **The Brain: Ground & Understand** | 🟡 In Progress | Grounded Page Chat (Done), Context Menus, Screenshot-and-Ask, Groq Fallback |
 | **Phase 3** | **The Hands: Approved Actions** | ⚪ Planned | Element Scanner, Numbered Badges, Proposal Cards, Human Confirmation Guard |
 | **Phase 4** | **The Agent: Multi-Step Memory** | ⚪ Planned | Plan DAG Engine, Self-Correction Loop, User Profiling, Voice Input |
 
