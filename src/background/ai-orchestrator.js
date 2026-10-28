@@ -22,6 +22,7 @@ const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models
  */
 export async function generateContent({
   prompt,
+  contents = null,
   systemInstruction = '',
   model = DEFAULT_CONFIG.MODEL,
   apiKey = '',
@@ -38,7 +39,7 @@ export async function generateContent({
   }
 
   const endpoint = `${GEMINI_API_BASE}/${model}:generateContent?key=${resolvedKey.trim()}`;
-  const payload = buildGeminiPayload({ prompt, systemInstruction, temperature, maxOutputTokens });
+  const payload = buildGeminiPayload({ prompt, contents, systemInstruction, temperature, maxOutputTokens });
 
   try {
     const response = await fetch(endpoint, {
@@ -104,6 +105,7 @@ export async function generateContent({
  */
 export async function streamGenerateContent({
   prompt,
+  contents = null,
   systemInstruction = '',
   model = DEFAULT_CONFIG.MODEL,
   apiKey = '',
@@ -120,7 +122,7 @@ export async function streamGenerateContent({
   }
 
   const endpoint = `${GEMINI_API_BASE}/${model}:streamGenerateContent?alt=sse&key=${resolvedKey.trim()}`;
-  const payload = buildGeminiPayload({ prompt, systemInstruction, temperature, maxOutputTokens });
+  const payload = buildGeminiPayload({ prompt, contents, systemInstruction, temperature, maxOutputTokens });
 
   try {
     const response = await fetch(endpoint, {
@@ -178,14 +180,16 @@ export async function streamGenerateContent({
 /**
  * Builds standard Google Gemini REST payload
  */
-function buildGeminiPayload({ prompt, systemInstruction, temperature, maxOutputTokens }) {
+function buildGeminiPayload({ prompt, contents = null, systemInstruction, temperature, maxOutputTokens }) {
+  const resolvedContents = contents && contents.length > 0 ? contents : [
+    {
+      role: 'user',
+      parts: [{ text: prompt || '' }]
+    }
+  ];
+
   const payload = {
-    contents: [
-      {
-        role: 'user',
-        parts: [{ text: prompt }]
-      }
-    ],
+    contents: resolvedContents,
     generationConfig: {
       temperature,
       maxOutputTokens

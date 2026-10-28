@@ -242,15 +242,96 @@
         </div>
       </section>
 
-      <!-- Chat Tab View Placeholder -->
+      <!-- Grounded Page Chat Tab View (Slice 2.1) -->
       <section id="view-chat" class="tab-pane" role="tabpanel">
-        <div class="placeholder-card">
-          <div class="placeholder-icon">💬</div>
-          <h2>Grounded Page Chat</h2>
-          <p>Chat with the current page without hallucinations. Ask questions grounded strictly in the page content.</p>
-          <div class="placeholder-hint">Configured in Phase 2</div>
+        <div class="chat-container">
+          <!-- Chat Context Header Bar -->
+          <div class="chat-context-bar" id="chat-context-bar">
+            <div class="chat-context-info">
+              <span class="chat-context-icon" id="chat-tab-icon">🌐</span>
+              <div class="chat-context-details">
+                <span class="chat-context-title" id="chat-tab-title">Detecting page context...</span>
+                <span class="chat-context-status" id="chat-tab-status">Reading active tab...</span>
+              </div>
+            </div>
+            <div class="chat-header-actions">
+              <button type="button" class="icon-text-btn" id="btn-refresh-context" title="Refresh context from active page">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+                <span>Sync</span>
+              </button>
+              <button type="button" class="icon-text-btn" id="btn-clear-chat" title="Clear chat session history">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+                <span>Clear</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Notification Banner -->
+          <div class="alert-banner hidden" id="chat-alert">
+            <span class="alert-icon"></span>
+            <span class="alert-text"></span>
+          </div>
+
+          <!-- Scrollable Messages Container -->
+          <div class="chat-messages-scroll" id="chat-messages-container">
+            <!-- Empty State / Welcome Suggestions -->
+            <div class="chat-empty-state" id="chat-empty-state">
+              <div class="chat-empty-icon">💬</div>
+              <h3>Grounded Page Chat</h3>
+              <p>Ask anything about the current webpage. Responses are strictly grounded in page content with zero hallucinations.</p>
+
+              <div class="chat-suggestions-title">Suggested questions for this page:</div>
+              <div class="chat-suggestions-wrap" id="chat-suggestions-wrap">
+                <button type="button" class="suggestion-chip" data-query="What is the main topic and purpose of this page?">
+                  📌 What is the main topic of this page?
+                </button>
+                <button type="button" class="suggestion-chip" data-query="List the 3 most critical insights from this text.">
+                  💡 List the 3 most critical insights
+                </button>
+                <button type="button" class="suggestion-chip" data-query="What technical terms or definitions are explained here?">
+                  🔍 What technical terms are defined here?
+                </button>
+                <button type="button" class="suggestion-chip" data-query="Are there any prerequisites, costs, or requirements mentioned?">
+                  📋 Any prerequisites or requirements mentioned?
+                </button>
+              </div>
+            </div>
+
+            <!-- Message Thread List -->
+            <div class="chat-thread-list" id="chat-thread-list"></div>
+          </div>
+
+          <!-- Chat Input Footer -->
+          <div class="chat-input-bar">
+            <div class="chat-input-wrapper">
+              <textarea
+                id="chat-input"
+                class="chat-textarea"
+                placeholder="Ask a question about this page... (Enter to send, Shift+Enter for newline)"
+                rows="1"
+                maxlength="4000"
+              ></textarea>
+              <button type="button" class="btn-chat-send" id="btn-chat-send" title="Send question (Enter)" aria-label="Send message">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              </button>
+            </div>
+            <div class="chat-input-footer-hint">
+              <span>Grounded in active tab</span>
+              <span>•</span>
+              <span id="chat-char-counter">0/4000</span>
+            </div>
+          </div>
         </div>
       </section>
+
 
       <!-- Agent Tab View Placeholder -->
       <section id="view-agent" class="tab-pane" role="tabpanel">
