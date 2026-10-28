@@ -93,9 +93,22 @@ Zero-downtime free-tier operation designed for high developer productivity:
 * **Exponential Backoff & Jitter**: Automatically catches HTTP 429 (rate-limiting) and HTTP 503 (server overload) from Gemini, performing up to 2 progressive retries with jitter (`1000ms * 2^attempt + jitter`).
 * **Groq Llama-3.3-70b Fallback**: If Gemini remains throttled, Sahayak seamlessly converts message structures to OpenAI format and executes instant failover via Groq's high-speed inference engine (`llama-3.3-70b-versatile`).
 * **Dynamic Status Indicators**: Header indicator pill and message headers dynamically update to reflect real-time provider state:
-  - 🟢 **Gemini Flash-Lite Active**: Primary engine operational.
-  - 🟠 **Rate-limited. Switched to Groq Fallback**: Circuit breaker active with Llama-3.3 fallback.
+  * 🟢 **Gemini Flash-Lite Active**: Primary engine operational.
+  * 🟠 **Rate-limited. Switched to Groq Fallback**: Circuit breaker active with Llama-3.3 fallback.
 * **Independent Key Testing**: Settings view provides dedicated configuration, visibility toggles, and live connection testing for both Gemini and Groq API keys.
+
+### 🎯 Interactive Element Scanner & Action Map (Phase 3 Slice 3.1)
+
+Enables controlled browser perception by scanning the active document for all actionable elements while enforcing deterministic safety guardrails:
+
+* **Actionable Element Detection**: Scans buttons (`button`, `[role="button"]`, submit/reset inputs), links (`a[href]`, `[role="link"]`), text fields (`input`, `textarea`), and choice controls (`select`, `checkbox`, `radio`).
+* **Physical Visibility Filtering**: Strictly excludes invisible or occluded elements (`offsetWidth/Height > 0`, computed styles `visibility !== 'hidden'`, `display !== 'none'`, `opacity > 0.05`).
+* **Deterministic Security Quarantine (Slice 4.3 Baseline)**: Strictly skips password inputs (`type="password"`) and hidden inputs (`type="hidden"`). Quarantined fields are never tagged or targeted.
+* **8-Tier Accessible Label Resolution**: Computes concise, human-readable labels falling back gracefully across `aria-label` ➔ `aria-labelledby` ➔ `<label for="...">` ➔ parent `<label>` ➔ `placeholder` ➔ `innerText` ➔ `value` ➔ `title` ➔ `name/id`.
+* **Consequential Action Detection**: Automatically flags buttons triggering state mutations (`submit`, `pay`, `order`, `delete`, `apply`, `confirm`) with visual warning badges.
+* **Stable Sequential ID Tagging**: Assigns sequential integer attributes `data-sahayak-id="1, 2, 3..."` on the active DOM and logs structured tables to the browser console.
+* **Side Panel Agent View**: Features real-time metrics cards (Total, Inputs, Buttons, Links, Consequential), filter tabs, search filtering, and one-click **Highlight on Page** with smooth scrolling and glowing cyan pulse rings.
+* **Practice Sandbox Testbed**: Includes [`assets/practice/internship-form.html`](file:///c:/Users/kastu/Desktop/Own%20AI%20Browser/assets/practice/internship-form.html) for safe testing of form filling and agent errands.
 
 ### ⚡ Ultra-Low Latency Streaming UI
 
@@ -137,7 +150,8 @@ Own AI Browser/
 ├── manifest.json              # Chrome Extension Manifest V3 configuration
 ├── .gitignore                 # Excludes .env, local credentials, and build caches
 ├── assets/
-│   └── icons/                 # Extension toolbar and webstore icons (16, 48, 128px)
+│   ├── icons/                 # Extension toolbar and webstore icons (16, 48, 128px)
+│   └── practice/              # Safe sandbox practice testbeds (internship-form.html)
 ├── doc/                       # Reference architecture & planning documents
 │   ├── ProblemStatement.md    # Product requirements and technical foundation
 │   ├── architecture.md        # IPC contracts, state machine, and threat model
@@ -147,11 +161,12 @@ Own AI Browser/
     ├── background/
     │   ├── service-worker.js  # MV3 Background worker, side panel lifecycle & port router
     │   ├── context-menu.js    # Selection context menu registration & action routing
-    │   └── ai-orchestrator.js # Direct REST client for Gemini with streaming & backoff
+    │   └── ai-orchestrator.js # Direct REST client for Gemini & Groq with streaming & backoff
     ├── content/
     │   ├── readability.js     # Bundled Mozilla Readability + isProbablyReaderable
     │   ├── extractor.js       # Cloned DOM content extraction & paywall/SPA defenses
-    │   └── youtube.js         # YouTube video perception, chapters, transcripts & seeking
+    │   ├── youtube.js         # YouTube video perception, chapters, transcripts & seeking
+    │   └── scanner.js         # DOM interactive element scanner, quarantine & action map
     ├── shared/
     │   ├── constants.js       # Storage keys, models, IPC message types & defaults
     │   └── types.js           # Structured IPC message payload schemas
@@ -161,7 +176,8 @@ Own AI Browser/
         ├── sidepanel.js       # Side panel controller & preferences manager
         ├── components/
         │   ├── summary-view.js # Article summarizer view, streaming renderer & clipboard
-        │   └── chat-view.js    # Grounded page chat view, multi-turn history & suggestions
+        │   ├── chat-view.js    # Grounded page chat view, multimodal vision & cropping
+        │   └── agent-view.js   # Interactive element scanner view, metrics & highlight controls
         └── lib/
             └── readability.js # Readability module for sidepanel operations
 ```

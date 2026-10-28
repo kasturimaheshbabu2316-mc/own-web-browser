@@ -388,13 +388,137 @@
       </section>
 
 
-      <!-- Agent Tab View Placeholder -->
+      <!-- Human-in-the-Loop Browser Agent View (Phase 3) -->
       <section id="view-agent" class="tab-pane" role="tabpanel">
-        <div class="placeholder-card">
-          <div class="placeholder-icon">🤖</div>
-          <h2>Human-in-the-Loop Browser Agent</h2>
-          <p>Scans interactive elements, visualizes numbered action maps, and performs approved steps with human oversight.</p>
-          <div class="placeholder-hint">Configured in Phase 3</div>
+        <div class="agent-container">
+          <!-- Active Tab Context Header -->
+          <div class="tab-context-banner" id="agent-tab-banner">
+            <div class="tab-context-info">
+              <span class="tab-context-favicon" id="agent-tab-favicon">🌐</span>
+              <div class="tab-context-details">
+                <span class="tab-context-title" id="agent-tab-title">Detecting active tab...</span>
+                <span class="tab-context-url" id="agent-tab-url">Checking address...</span>
+              </div>
+            </div>
+            <div class="agent-header-actions">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-open-practice" title="Open practice internship form testbed in new tab">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                  <polyline points="15 3 21 3 21 9"/>
+                  <line x1="10" y1="14" x2="21" y2="3"/>
+                </svg>
+                <span>Practice Form</span>
+              </button>
+              <button type="button" class="btn btn-primary btn-sm" id="btn-scan-elements">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polygon points="10 8 16 12 10 16 10 8"/>
+                </svg>
+                <span id="btn-scan-text">Scan Page</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Alert / Notice Banner -->
+          <div class="alert-banner hidden" id="agent-alert">
+            <span class="alert-icon"></span>
+            <span class="alert-text"></span>
+          </div>
+
+          <!-- Empty State (Before Scan) -->
+          <div class="agent-empty-state" id="agent-empty-state">
+            <div class="empty-icon-wrap">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="22" y1="12" x2="18" y2="12"/>
+                <line x1="6" y1="12" x2="2" y2="12"/>
+                <line x1="12" y1="6" x2="12" y2="2"/>
+                <line x1="12" y1="22" x2="12" y2="18"/>
+              </svg>
+            </div>
+            <h3>Interactive Element Scanner</h3>
+            <p>Scans the active document for actionable inputs, buttons, and links. Assigns stable sequential IDs (1, 2, 3...) for Human-in-the-Loop execution.</p>
+            
+            <div class="features-pill-list">
+              <div class="feature-item">
+                <span class="feature-bullet">🎯</span>
+                <strong>Action Map:</strong> Detects buttons, text fields, selects, and links
+              </div>
+              <div class="feature-item">
+                <span class="feature-bullet">🛡️</span>
+                <strong>Security Quarantine:</strong> Strictly skips passwords and hidden fields
+              </div>
+              <div class="feature-item">
+                <span class="feature-bullet">⚠️</span>
+                <strong>Consequential Detection:</strong> Flags submit, delete, and purchase actions
+              </div>
+            </div>
+
+            <div class="empty-cta-box">
+              <button type="button" class="btn btn-primary" id="btn-empty-scan">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polygon points="10 8 16 12 10 16 10 8"/>
+                </svg>
+                <span>Scan Current Webpage</span>
+              </button>
+              <div class="empty-cta-hint">Or click <strong>"Practice Form"</strong> above to launch the safe sandbox.</div>
+            </div>
+          </div>
+
+          <!-- Scanned Content Container (Hidden until scanned) -->
+          <div class="agent-scanned-content hidden" id="agent-scanned-content">
+            <!-- Metrics Summary Grid -->
+            <div class="scan-metrics-grid">
+              <div class="metric-card">
+                <span class="metric-value" id="metric-total">0</span>
+                <span class="metric-label">Total Elements</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-value" id="metric-inputs">0</span>
+                <span class="metric-label">Inputs &amp; Forms</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-value" id="metric-buttons">0</span>
+                <span class="metric-label">Buttons</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-value" id="metric-links">0</span>
+                <span class="metric-label">Links</span>
+              </div>
+              <div class="metric-card metric-consequential">
+                <span class="metric-value" id="metric-consequential">0</span>
+                <span class="metric-label">⚠️ Consequential</span>
+              </div>
+            </div>
+
+            <!-- Filter Tabs & Search Bar -->
+            <div class="scanner-toolbar">
+              <div class="scanner-filters" role="group" aria-label="Filter Scanned Elements">
+                <button type="button" class="filter-pill active" data-filter="all">All (<span id="count-filter-all">0</span>)</button>
+                <button type="button" class="filter-pill" data-filter="input">Inputs (<span id="count-filter-inputs">0</span>)</button>
+                <button type="button" class="filter-pill" data-filter="button">Buttons (<span id="count-filter-buttons">0</span>)</button>
+                <button type="button" class="filter-pill" data-filter="link">Links (<span id="count-filter-links">0</span>)</button>
+                <button type="button" class="filter-pill filter-consequential" data-filter="consequential">⚠️ Flagged (<span id="count-filter-consequential">0</span>)</button>
+              </div>
+
+              <div class="scanner-search-wrap">
+                <input type="text" id="scanner-search-input" class="scanner-search-input" placeholder="Search by label, tag, or ID..." aria-label="Search scanned elements">
+                <button type="button" id="btn-clear-highlights" class="icon-text-btn" title="Clear glowing highlights on page">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
+                  <span>Clear Highlights</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Scanned Elements Card List -->
+            <div class="scanned-elements-list" id="scanned-elements-list">
+              <!-- Element Cards dynamically rendered here -->
+            </div>
+          </div>
         </div>
       </section>
 

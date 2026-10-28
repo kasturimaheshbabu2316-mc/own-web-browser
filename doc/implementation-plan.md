@@ -347,7 +347,7 @@ Provide controlled browser interaction capabilities. Sahayak scans the page for 
 
 ### Phase 3 Acceptance Criteria
 
-- [ ] All interactive elements are detected, classified, and numbered.
+- [x] All interactive elements are detected, classified, and numbered (Slice 3.1).
 - [ ] Numbered badges display seamlessly inside an isolated Shadow DOM.
 - [ ] Natural language search ("Find it for me") scrolls to and highlights target elements.
 - [ ] Agent proposes one step at a time via strict JSON schema.

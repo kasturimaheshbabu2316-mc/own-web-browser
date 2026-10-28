@@ -6,10 +6,12 @@ import { STORAGE_KEYS, DEFAULT_CONFIG, IPC_MESSAGES } from '../shared/constants.
 import { DEV_CONFIG } from '../shared/env.js';
 import { SummaryView } from './components/summary-view.js';
 import { ChatView } from './components/chat-view.js';
+import { AgentView } from './components/agent-view.js';
 
 // Component References
 let summaryView = null;
 let chatView = null;
+let agentView = null;
 
 // DOM Element References
 const elements = {
@@ -92,6 +94,14 @@ function initSubComponents() {
       onNavigateToSettings: () => switchTab('settings')
     });
   }
+
+  const agentContainer = document.getElementById('view-agent');
+  if (agentContainer) {
+    agentView = new AgentView({
+      container: agentContainer,
+      onNavigateToSettings: () => switchTab('settings')
+    });
+  }
 }
 
 /**
@@ -127,6 +137,8 @@ function switchTab(tabName) {
     summaryView.refreshActiveTabInfo();
   } else if (tabName === 'chat' && chatView) {
     chatView.onTabActivated();
+  } else if (tabName === 'agent' && agentView) {
+    agentView.onTabActivated();
   }
 }
 
