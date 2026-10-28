@@ -41,9 +41,21 @@ Extracts any article, blog, documentation, or news story into three distinct, ac
 * **💡 Key Insights**: Exactly 5 distilled takeaways and data points.
 * **🚀 Next Steps & Actionable Takeaways**: 2–3 practical recommendations for the reader.
 
-### 🌐 Bilingual Dialect Toggle (English & Hinglish)
+### 🎥 YouTube Public Video Summarizer & Clickable Timestamps (Slice 1.4)
 
-Switch seamlessly between standard **English** and natural, conversational **Hinglish** (Hindi grammar written in Latin script retaining standard technical terminology, e.g., *"Yeh article explain karta hai ki microservices architecture kaise scale hoti hai..."*).
+Automatically detects YouTube videos (`youtube.com/watch?v=*` and `/shorts/*`), extracts video metadata, description, chapters, and captions:
+
+* **⏱️ Video Chapters & Timestamps**: Chronological chapter breakdown where each timestamp like `[02:15]` is an interactive, clickable button.
+* **Direct Player Navigation**: Clicking any timestamp immediately dispatches an IPC seek command to the active YouTube tab (`video.currentTime = seconds`), jumping playback with an animated on-screen HUD.
+* **Edge-Case Resilience**: Deterministically flags active live streams and bypasses pre-roll/mid-roll advertisements to ensure transcript accuracy.
+
+### 🌐 Bilingual Dialect Toggle: English & Hinglish (Slice 1.5)
+
+Switch instantly using the top header segment control (`EN` / `Hinglish`):
+
+* **Standard English**: Crisp, authoritative summaries with industry-standard terminology.
+* **Conversational Hinglish**: Natural, colloquial Hindi-English mixing written in the Latin alphabet while retaining all technical and domain terms (e.g., *"Yeh video explain karta hai ki microservices architecture kaise scale hoti hai..."*).
+* **Storage Synchronization**: Preferences persist locally via `chrome.storage.local` across sessions and sync bidirectionally with Settings.
 
 ### ⚡ Ultra-Low Latency Streaming UI
 
@@ -52,9 +64,10 @@ Real-time typewriter streaming via Chrome's native streaming port (`sahayak-stre
 ### 🛡️ Production Web Edge-Case Defenses
 
 * **Single-Page Application (SPA) Retries**: 5-step polling loop with mutation detection for hydrating Next.js, React, and Substack pages.
+* **Live Stream & Ad Detection**: Bypasses YouTube ad players and warns on active live streams.
 * **Paywall & Subscription Awareness**: Heuristically detects gated articles and extracts available preview content with user alerts.
 * **Token Budget Safeguards**: Automatically condenses long documents (>18,000 words) using hierarchical head/section/tail chunking.
-* **Anti-Prompt Injection Guardrails**: Isolates page text inside `<<<UNTRUSTED_WEB_PAGE_CONTENT>>>` XML boundaries.
+* **Anti-Prompt Injection Guardrails**: Isolates page text inside `<<<UNTRUSTED_WEB_PAGE_CONTENT>>>` and `<<<UNTRUSTED_YOUTUBE_VIDEO_CONTENT>>>` XML boundaries.
 
 ---
 
@@ -96,7 +109,8 @@ Own AI Browser/
     │   └── ai-orchestrator.js # Direct REST client for Gemini with streaming & backoff
     ├── content/
     │   ├── readability.js     # Bundled Mozilla Readability + isProbablyReaderable
-    │   └── extractor.js       # Cloned DOM content extraction & paywall/SPA defenses
+    │   ├── extractor.js       # Cloned DOM content extraction & paywall/SPA defenses
+    │   └── youtube.js         # YouTube video perception, chapters, transcripts & seeking
     ├── shared/
     │   ├── constants.js       # Storage keys, models, IPC message types & defaults
     │   └── types.js           # Structured IPC message payload schemas
@@ -159,7 +173,7 @@ cd own-web-browser
 
 | Phase | Focus Area | Status | Deliverables |
 | :--- | :--- | :---: | :--- |
-| **Phase 1** | **The Eyes: Read & Extract** | 🟡 In Progress | MV3 Shell, Gemini Streaming, Cloned Readability, 3-Part Summary, Hinglish Toggle |
+| **Phase 1** | **The Eyes: Read & Extract** | 🟢 Complete | MV3 Shell, Gemini Streaming, Cloned Readability, YouTube Timestamps, Hinglish Toggle |
 | **Phase 2** | **The Brain: Ground & Understand** | ⚪ Planned | Grounded Page Chat, Context Menus (Explain/Draft), Screenshot-and-Ask, Groq Fallback |
 | **Phase 3** | **The Hands: Approved Actions** | ⚪ Planned | Element Scanner, Numbered Badges, Proposal Cards, Human Confirmation Guard |
 | **Phase 4** | **The Agent: Multi-Step Memory** | ⚪ Planned | Plan DAG Engine, Self-Correction Loop, User Profiling, Voice Input |

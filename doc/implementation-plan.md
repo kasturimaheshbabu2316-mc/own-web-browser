@@ -128,8 +128,8 @@ Scaffold the Chrome Manifest V3 foundation and deliver the core content percepti
 - [x] Unpacked extension loads into Chrome with zero manifest warnings.
 - [x] Side panel opens and retains the user's Gemini API key locally.
 - [x] Any readable web article generates a structured 3-part summary.
-- [ ] Public YouTube videos produce chapter summaries with functional seek timestamps.
-- [ ] English and Hinglish language switching functions seamlessly.
+- [x] Public YouTube videos produce chapter summaries with functional seek timestamps.
+- [x] English and Hinglish language switching functions seamlessly.
 
 ---
 
@@ -474,11 +474,11 @@ Before publishing the project, execute this end-to-end verification checklist:
 
 | Verification Target | Expected Behavior | Pass / Fail |
 | --- | --- | --- |
-| **Clean Installation** | Unpacks without manifest or permission warnings in Chrome | [ ] |
-| **API Credential Security** | Stored in `chrome.storage.local`; omitted from source/repo | [ ] |
-| **Article Summarization** | Outputs TL;DR, 5 points, next steps from Readability.js | [ ] |
-| **YouTube Navigation** | Generates chapter breakdown with functional timestamp seeking | [ ] |
-| **Bilingual Toggle** | Seamlessly alternates between English and colloquial Hinglish | [ ] |
+| **Clean Installation** | Unpacks without manifest or permission warnings in Chrome | [x] |
+| **API Credential Security** | Stored in `chrome.storage.local`; omitted from source/repo | [x] |
+| **Article Summarization** | Outputs TL;DR, 5 points, next steps from Readability.js | [x] |
+| **YouTube Navigation** | Generates chapter breakdown with functional timestamp seeking | [x] |
+| **Bilingual Toggle** | Seamlessly alternates between English and colloquial Hinglish | [x] |
 | **Grounded Page Chat** | Answers strictly from page context; declines ungrounded queries | [ ] |
 | **Context Menu Actions** | Right-click triggers Explain, Translate, and Draft Reply | [ ] |
 | **Multimodal Vision** | Captures tab and correctly analyzes visual diagrams/charts | [ ] |

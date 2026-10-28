@@ -1,7 +1,8 @@
 /**
  * Sahayak Extension - Summary View Component
- * Handles tab content extraction, Gemini prompt formulation, streaming response rendering,
- * and structured 3-part card presentation (TL;DR, 5 Key Insights, Next Steps).
+ * Handles tab content extraction (Mozilla Readability for articles & YouTube video chapters/transcripts),
+ * Gemini prompt formulation with bilingual English/Hinglish dialect support, real-time streaming,
+ * and structured card presentation with interactive seek timestamps.
  */
 
 import { STORAGE_KEYS, DEFAULT_CONFIG, IPC_MESSAGES } from '../../shared/constants.js';
@@ -19,13 +20,18 @@ export class SummaryView {
     // Component State
     this.state = {
       activeTab: null,
+      isVideo: false,
+      language: DEFAULT_CONFIG.LANGUAGE,
       extractedArticle: null,
+      videoData: null,
       isExtracting: false,
       isSummarizing: false,
       rawMarkdown: '',
       generationTimeMs: 0,
       activePort: null
     };
+
+    this._toastTimeout = null;
 
     this.initDOM();
     this.bindEvents();
@@ -68,7 +74,7 @@ export class SummaryView {
           <span id="extraction-status-text">Cloning DOM and running Mozilla Readability...</span>
         </div>
 
-        <!-- Article Metadata Bar (Shown after successful extraction) -->
+        <!-- Metadata Bar (Shown after successful extraction) -->
         <div class="article-meta-bar hidden" id="article-meta-bar">
           <div class="meta-badge-group">
             <span class="meta-badge" id="badge-word-count">0 words</span>
@@ -89,7 +95,7 @@ export class SummaryView {
 
         <!-- Empty State / Welcome Card -->
         <div class="summary-empty-state" id="summary-empty-state">
-          <div class="empty-icon-wrap">
+          <div class="empty-icon-wrap" id="empty-state-icon">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
               <polyline points="14 2 14 8 20 8"/>
@@ -98,23 +104,27 @@ export class SummaryView {
               <polyline points="10 9 9 9 8 9"/>
             </svg>
           </div>
-          <h3>Structured Article Summarizer</h3>
-          <p>Extracts noise-free article text with Mozilla Readability, stripping ads, popups, and navs. Delivers:</p>
-          <div class="features-pill-list">
+          <h3 id="empty-state-title">Structured Web & Video Summarizer</h3>
+          <p id="empty-state-desc">Extracts clean article text with Readability or YouTube video transcripts. Delivers:</p>
+          <div class="features-pill-list" id="empty-features-list">
             <div class="feature-item">
               <span class="feature-bullet">📌</span>
               <strong>TL;DR:</strong> 1–2 crisp, core summary sentences
+            </div>
+            <div class="feature-item">
+              <span class="feature-bullet">⏱️</span>
+              <strong>Video Chapters:</strong> Clickable timestamps that seek YouTube playback
             </div>
             <div class="feature-item">
               <span class="feature-bullet">💡</span>
               <strong>Key Insights:</strong> Exactly 5 distilled takeaways
             </div>
             <div class="feature-item">
-              <span class="feature-bullet">🚀</span>
-              <strong>Next Steps:</strong> 2–3 actionable recommendations
+              <span class="feature-bullet">🌐</span>
+              <strong>Bilingual:</strong> Seamless English or colloquial Hinglish output
             </div>
           </div>
-          <div class="empty-cta-hint">Click <strong>"Summarize Page"</strong> above to analyze the current browser tab.</div>
+          <div class="empty-cta-hint" id="empty-state-cta">Click <strong>"Summarize Page"</strong> above to analyze the current browser tab.</div>
         </div>
 
         <!-- Structured Summary Cards Container -->
@@ -132,7 +142,22 @@ export class SummaryView {
             </div>
           </div>
 
-          <!-- Section 2: Key Insights Card -->
+          <!-- Section 2: Video Chapters & Timestamps Card (Slice 1.4) -->
+          <div class="summary-section-card chapters-card hidden" id="section-chapters-wrap">
+            <div class="card-section-header">
+              <span class="section-emoji">⏱️</span>
+              <h3 class="section-heading">Video Chapters &amp; Timestamps</h3>
+              <span class="badge-count" id="chapters-count-badge">Chapters</span>
+            </div>
+            <div class="section-body" id="section-chapters-content">
+              <ul class="chapters-list" id="chapters-list-el">
+                <li class="streaming-skeleton-line"></li>
+                <li class="streaming-skeleton-line short"></li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Section 3: Key Insights Card -->
           <div class="summary-section-card insights-card">
             <div class="card-section-header">
               <span class="section-emoji">💡</span>
@@ -148,7 +173,7 @@ export class SummaryView {
             </div>
           </div>
 
-          <!-- Section 3: Next Steps Card -->
+          <!-- Section 4: Next Steps Card -->
           <div class="summary-section-card next-steps-card">
             <div class="card-section-header">
               <span class="section-emoji">🚀</span>
@@ -162,7 +187,7 @@ export class SummaryView {
             </div>
           </div>
 
-          <!-- Streaming Live Raw Preview (Collapsed by default, expands if parsing is partial) -->
+          <!-- Streaming Live Raw Preview -->
           <div class="raw-preview-wrapper hidden" id="raw-preview-wrapper">
             <div class="raw-preview-header">
               <span>Streaming Live Output</span>
@@ -171,6 +196,12 @@ export class SummaryView {
             <div class="raw-preview-text" id="raw-preview-text"></div>
           </div>
 
+        </div>
+
+        <!-- Floating Seek Toast HUD -->
+        <div id="seek-toast" class="seek-toast hidden" role="status" aria-live="polite">
+          <span class="seek-toast-icon">⏱️</span>
+          <span id="seek-toast-text">Sought video</span>
         </div>
       </div>
     `;
@@ -195,12 +226,20 @@ export class SummaryView {
       btnCopySummary: this.container.querySelector('#btn-copy-summary'),
       copySummaryLabel: this.container.querySelector('#copy-summary-label'),
       emptyState: this.container.querySelector('#summary-empty-state'),
+      emptyStateTitle: this.container.querySelector('#empty-state-title'),
+      emptyStateDesc: this.container.querySelector('#empty-state-desc'),
+      emptyStateCta: this.container.querySelector('#empty-state-cta'),
       summaryWrap: this.container.querySelector('#structured-summary-wrap'),
       tldrContent: this.container.querySelector('#section-tldr-content'),
+      chaptersWrap: this.container.querySelector('#section-chapters-wrap'),
+      chaptersList: this.container.querySelector('#chapters-list-el'),
+      chaptersCountBadge: this.container.querySelector('#chapters-count-badge'),
       insightsList: this.container.querySelector('#insights-list-el'),
       nextStepsList: this.container.querySelector('#next-steps-list-el'),
       rawPreviewWrap: this.container.querySelector('#raw-preview-wrapper'),
-      rawPreviewText: this.container.querySelector('#raw-preview-text')
+      rawPreviewText: this.container.querySelector('#raw-preview-text'),
+      seekToast: this.container.querySelector('#seek-toast'),
+      seekToastText: this.container.querySelector('#seek-toast-text')
     };
   }
 
@@ -214,6 +253,19 @@ export class SummaryView {
 
     this.dom.btnCopySummary.addEventListener('click', () => {
       this.copySummaryToClipboard();
+    });
+
+    // Delegated click listener for interactive timestamp pills (Slice 1.4)
+    this.container.addEventListener('click', (e) => {
+      const btn = e.target.closest('.timestamp-pill');
+      if (btn) {
+        e.preventDefault();
+        e.stopPropagation();
+        const seconds = parseFloat(btn.getAttribute('data-seconds'));
+        if (!isNaN(seconds)) {
+          this.seekVideo(seconds, btn.textContent.trim(), btn);
+        }
+      }
     });
 
     // Listen to tab activation changes to refresh active tab banner
@@ -233,7 +285,25 @@ export class SummaryView {
   }
 
   /**
-   * Updates the top banner with the active tab's metadata
+   * Tests if URL is a YouTube watch or shorts URL (Slice 1.4)
+   * @param {string} url 
+   * @returns {boolean}
+   */
+  isYouTubeUrl(url = '') {
+    if (!url) return false;
+    try {
+      const u = new URL(url);
+      return (
+        (u.hostname === 'www.youtube.com' || u.hostname === 'youtube.com' || u.hostname === 'm.youtube.com') &&
+        (u.pathname === '/watch' || u.pathname.startsWith('/shorts/'))
+      ) || (u.hostname === 'youtu.be');
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Updates the top banner with the active tab's metadata and adapts UI for YouTube vs standard pages
    */
   async refreshActiveTabInfo() {
     try {
@@ -243,26 +313,59 @@ export class SummaryView {
       if (!tab) return;
 
       this.state.activeTab = tab;
-      this.dom.tabTitle.textContent = tab.title || 'Untitled Page';
+      const isYouTube = this.isYouTubeUrl(tab.url);
+      this.state.isVideo = isYouTube;
+
+      this.dom.tabTitle.textContent = tab.title ? tab.title.replace(' - YouTube', '') : 'Untitled Page';
       this.dom.tabTitle.setAttribute('title', tab.title || '');
 
       try {
         const urlObj = new URL(tab.url || '');
-        this.dom.tabUrl.textContent = urlObj.hostname + (urlObj.pathname.length > 30 ? urlObj.pathname.slice(0, 30) + '...' : urlObj.pathname);
+        if (isYouTube) {
+          const videoId = urlObj.searchParams.get('v') || urlObj.pathname.replace('/shorts/', '');
+          this.dom.tabUrl.textContent = `youtube.com/watch?v=${videoId || '...'}`;
+        } else {
+          this.dom.tabUrl.textContent = urlObj.hostname + (urlObj.pathname.length > 30 ? urlObj.pathname.slice(0, 30) + '...' : urlObj.pathname);
+        }
       } catch {
         this.dom.tabUrl.textContent = tab.url || '';
       }
 
-      // Check if restricted page
+      // Check if restricted page (internal chrome, store, etc.)
       const isRestricted = this.isRestrictedUrl(tab.url);
       if (isRestricted) {
         this.dom.btnSummarize.disabled = true;
         this.dom.btnSummarize.classList.add('disabled');
         this.dom.btnSummarize.setAttribute('title', 'Browser system pages cannot be accessed by extensions.');
-      } else {
+        this.dom.tabFavicon.textContent = '🔒';
+        this.dom.btnSummarizeText.textContent = 'Summarize Page';
+        this.dom.btnSummarize.classList.remove('btn-youtube');
+      } else if (isYouTube) {
+        // YouTube video mode styling
         this.dom.btnSummarize.disabled = false;
         this.dom.btnSummarize.classList.remove('disabled');
         this.dom.btnSummarize.removeAttribute('title');
+        this.dom.tabFavicon.textContent = '▶️';
+        this.dom.btnSummarize.classList.add('btn-youtube');
+        this.dom.btnSummarizeText.textContent = 'Summarize Video';
+        if (this.dom.emptyStateTitle) {
+          this.dom.emptyStateTitle.textContent = 'YouTube Video Summarizer';
+          this.dom.emptyStateDesc.textContent = 'Extracts video chapters and transcripts. Delivers clickable timestamps that seek the YouTube player directly:';
+          this.dom.emptyStateCta.innerHTML = 'Click <strong>"Summarize Video"</strong> above to analyze this video.';
+        }
+      } else {
+        // Standard Article mode styling
+        this.dom.btnSummarize.disabled = false;
+        this.dom.btnSummarize.classList.remove('disabled');
+        this.dom.btnSummarize.removeAttribute('title');
+        this.dom.tabFavicon.textContent = '🌐';
+        this.dom.btnSummarize.classList.remove('btn-youtube');
+        this.dom.btnSummarizeText.textContent = 'Summarize Page';
+        if (this.dom.emptyStateTitle) {
+          this.dom.emptyStateTitle.textContent = 'Structured Article Summarizer';
+          this.dom.emptyStateDesc.textContent = 'Extracts noise-free article text with Mozilla Readability, stripping ads, popups, and navs. Delivers:';
+          this.dom.emptyStateCta.innerHTML = 'Click <strong>"Summarize Page"</strong> above to analyze the current browser tab.';
+        }
       }
     } catch (err) {
       console.warn('[SummaryView] Could not refresh tab info:', err);
@@ -287,7 +390,21 @@ export class SummaryView {
   }
 
   /**
-   * Triggered when user clicks "Summarize Page"
+   * Called when active language is switched from the header segment toggle (Slice 1.5)
+   * @param {'en' | 'hinglish'} newLang 
+   */
+  onLanguageChanged(newLang) {
+    this.state.language = newLang;
+    if (this.state.rawMarkdown) {
+      const targetLabel = this.state.isVideo ? 'Re-summarize Video' : 'Re-summarize';
+      const langSuffix = newLang === 'hinglish' ? 'in Hinglish' : 'in English';
+      this.dom.btnSummarizeText.textContent = `${targetLabel} (${langSuffix})`;
+      this.showAlert(`Language set to ${newLang.toUpperCase()}. Click to re-summarize in ${newLang === 'hinglish' ? 'Hinglish' : 'English'}.`, 'info');
+    }
+  }
+
+  /**
+   * Triggered when user clicks "Summarize Page" or "Summarize Video"
    */
   async handleSummarizeClick() {
     if (this.state.isExtracting || this.state.isSummarizing) {
@@ -298,7 +415,7 @@ export class SummaryView {
     await this.refreshActiveTabInfo();
 
     if (!this.state.activeTab || this.isRestrictedUrl(this.state.activeTab.url)) {
-      this.showAlert('Cannot summarize internal browser pages or empty tabs. Please open any article or webpage.', 'warning');
+      this.showAlert('Cannot summarize internal browser pages or empty tabs. Please open any article or YouTube video.', 'warning');
       return;
     }
 
@@ -322,10 +439,73 @@ export class SummaryView {
     }
 
     const model = settings[STORAGE_KEYS.DEFAULT_MODEL] || DEFAULT_CONFIG.MODEL;
-    const language = settings[STORAGE_KEYS.LANGUAGE] || DEFAULT_CONFIG.LANGUAGE;
+    const language = settings[STORAGE_KEYS.LANGUAGE] || this.state.language || DEFAULT_CONFIG.LANGUAGE;
+    this.state.language = language;
 
-    // Step 1: Extract article content from active tab
-    const article = await this.extractArticleContent(this.state.activeTab.id);
+    const isYouTube = this.state.isVideo || this.isYouTubeUrl(this.state.activeTab.url);
+
+    if (isYouTube) {
+      // Branch A: YouTube Video Summarization Pipeline (Slice 1.4)
+      await this.handleYouTubeSummarization({
+        tabId: this.state.activeTab.id,
+        apiKey,
+        model,
+        language
+      });
+    } else {
+      // Branch B: Article Readability Summarization Pipeline (Slice 1.3 & 1.5)
+      await this.handleArticleSummarization({
+        tabId: this.state.activeTab.id,
+        apiKey,
+        model,
+        language
+      });
+    }
+  }
+
+  /**
+   * Coordinates YouTube video extraction and generation
+   */
+  async handleYouTubeSummarization({ tabId, apiKey, model, language }) {
+    const videoData = await this.extractYouTubeContent(tabId);
+    if (!videoData || !videoData.success) {
+      if (videoData && videoData.isLiveStream) {
+        this.showAlert(videoData.error || 'Live streams cannot be summarized until the broadcast completes.', 'warning');
+      } else {
+        this.showAlert(videoData?.error || 'Could not extract video data from this YouTube tab.', 'error');
+      }
+      return;
+    }
+
+    this.state.videoData = videoData;
+
+    // Edge Case 1.4: Surface warning if an advertisement was playing
+    if (videoData.isAdPlaying) {
+      this.showAlert('Advertisement detected. Video notes and timestamps are targeted to the main video.', 'info');
+    }
+
+    // Update Metadata Bar
+    this.dom.badgeWordCount.textContent = videoData.durationFormatted ? `⏱️ ${videoData.durationFormatted}` : `${videoData.wordCount} words`;
+    this.dom.badgeReadingTime.textContent = videoData.channelName ? `${videoData.channelName}` : 'YouTube';
+    this.dom.badgeModel.textContent = model.replace('-latest', '').replace('gemini-', '');
+    this.dom.badgeModel.className = 'meta-badge meta-badge-yt';
+    this.dom.articleMetaBar.classList.remove('hidden');
+
+    // Stream structured summary with chapters and timestamps
+    await this.generateStructuredSummary({
+      contentData: videoData,
+      apiKey,
+      model,
+      language,
+      isVideo: true
+    });
+  }
+
+  /**
+   * Coordinates Article Readability extraction and generation
+   */
+  async handleArticleSummarization({ tabId, apiKey, model, language }) {
+    const article = await this.extractArticleContent(tabId);
     if (!article || !article.success) {
       this.showAlert(article?.error || 'Could not extract readable content from this page.', 'error');
       return;
@@ -333,7 +513,6 @@ export class SummaryView {
 
     this.state.extractedArticle = article;
 
-    // Surface paywall warning if detected
     if (article.isPaywalled) {
       this.showAlert('Paywall or subscription gate detected on page. Summarizing from available preview text.', 'warning');
     }
@@ -342,10 +521,59 @@ export class SummaryView {
     this.dom.badgeWordCount.textContent = `${article.wordCount.toLocaleString()} words`;
     this.dom.badgeReadingTime.textContent = `~${article.readingTimeMinutes} min read`;
     this.dom.badgeModel.textContent = model.replace('-latest', '').replace('gemini-', '');
+    this.dom.badgeModel.className = 'meta-badge meta-badge-accent';
     this.dom.articleMetaBar.classList.remove('hidden');
 
-    // Step 2: Stream AI Summary
-    await this.generateStructuredSummary({ article, apiKey, model, language });
+    // Hide chapters card for standard articles
+    this.dom.chaptersWrap.classList.add('hidden');
+
+    // Stream structured 3-part article summary
+    await this.generateStructuredSummary({
+      contentData: article,
+      apiKey,
+      model,
+      language,
+      isVideo: false
+    });
+  }
+
+  /**
+   * Extracts YouTube metadata, chapters, and transcript from the active tab
+   * @param {number} tabId 
+   * @returns {Promise<object>}
+   */
+  async extractYouTubeContent(tabId) {
+    this.state.isExtracting = true;
+    this.setBtnLoading(true, 'Extracting Video...');
+    this.dom.extractionStatus.classList.remove('hidden');
+    this.dom.extractionStatusText.textContent = 'Connecting to YouTube player and extracting transcript...';
+
+    try {
+      let response = await this.sendMessageToTab(tabId, { type: IPC_MESSAGES.EXTRACT_YOUTUBE_DATA });
+
+      // If YouTube content script was not ready, dynamically inject and retry
+      if (!response) {
+        console.log('[SummaryView] YouTube content script missing. Injecting dynamically...');
+        this.dom.extractionStatusText.textContent = 'Injecting YouTube perception script...';
+
+        await chrome.scripting.executeScript({
+          target: { tabId },
+          files: ['src/content/youtube.js']
+        });
+
+        await new Promise(r => setTimeout(r, 200));
+        response = await this.sendMessageToTab(tabId, { type: IPC_MESSAGES.EXTRACT_YOUTUBE_DATA });
+      }
+
+      return response;
+    } catch (err) {
+      console.error('[SummaryView] YouTube extraction failure:', err);
+      return { success: false, error: `YouTube extraction error: ${err.message}` };
+    } finally {
+      this.state.isExtracting = false;
+      this.dom.extractionStatus.classList.add('hidden');
+      this.setBtnLoading(false, 'Summarize Video');
+    }
   }
 
   /**
@@ -362,7 +590,6 @@ export class SummaryView {
     try {
       let response = await this.sendMessageToTab(tabId, { type: IPC_MESSAGES.EXTRACT_CONTENT });
 
-      // If content script was not active, dynamically inject and retry
       if (!response) {
         console.log('[SummaryView] Content script missing. Injecting dynamically via chrome.scripting...');
         this.dom.extractionStatusText.textContent = 'Injecting extraction engine into active tab...';
@@ -372,9 +599,7 @@ export class SummaryView {
           files: ['src/content/readability.js', 'src/content/extractor.js']
         });
 
-        // Short breathing room for script initialization
         await new Promise(r => setTimeout(r, 200));
-
         response = await this.sendMessageToTab(tabId, { type: IPC_MESSAGES.EXTRACT_CONTENT });
       }
 
@@ -405,24 +630,24 @@ export class SummaryView {
   }
 
   /**
-   * Generates structured 3-part summary using real-time streaming over port
+   * Generates structured summary using real-time streaming over background port
    */
-  async generateStructuredSummary({ article, apiKey, model, language }) {
+  async generateStructuredSummary({ contentData, apiKey, model, language, isVideo }) {
     this.state.isSummarizing = true;
-    this.setBtnLoading(true, 'Summarizing...');
+    this.setBtnLoading(true, isVideo ? 'Summarizing Video...' : 'Summarizing...');
     this.dom.emptyState.classList.add('hidden');
     this.dom.summaryWrap.classList.remove('hidden');
 
     // Reset card contents to loading skeleton state
-    this.renderSkeletons();
+    this.renderSkeletons(isVideo);
     this.dom.rawPreviewWrap.classList.remove('hidden');
     this.dom.rawPreviewText.textContent = 'Connecting to Gemini Flash-Lite...';
 
     const startTime = Date.now();
     this.dom.badgeLatency.textContent = 'Generating...';
 
-    const systemInstruction = this.buildSystemPrompt(language);
-    const userPrompt = this.buildUserPrompt(article, language);
+    const systemInstruction = this.buildSystemPrompt(language, isVideo);
+    const userPrompt = this.buildUserPrompt(contentData, language, isVideo);
 
     try {
       // Connect to background streaming port
@@ -438,25 +663,25 @@ export class SummaryView {
           this.dom.badgeLatency.textContent = `${((Date.now() - startTime) / 1000).toFixed(1)}s`;
 
           // Incrementally update structured cards
-          this.renderIncrementalSummary(accumulatedText);
+          this.renderIncrementalSummary(accumulatedText, isVideo);
 
         } else if (msg.type === IPC_MESSAGES.STREAM_DONE) {
           const totalDuration = ((Date.now() - startTime) / 1000).toFixed(2);
           this.dom.badgeLatency.textContent = `${totalDuration}s`;
           this.state.rawMarkdown = msg.text || accumulatedText;
 
-          // Final polished render
-          this.renderFinalSummary(this.state.rawMarkdown);
-          this.dom.rawPreviewWrap.classList.add('hidden'); // Hide raw box on completion
+          // Final polished render with interactive timestamp buttons
+          this.renderFinalSummary(this.state.rawMarkdown, isVideo);
+          this.dom.rawPreviewWrap.classList.add('hidden');
 
-          this.setBtnLoading(false, 'Re-summarize');
+          this.setBtnLoading(false, isVideo ? 'Re-summarize Video' : 'Re-summarize');
           this.state.isSummarizing = false;
           port.disconnect();
 
         } else if (msg.type === IPC_MESSAGES.STREAM_ERROR) {
           this.dom.badgeLatency.textContent = 'Error';
           this.showAlert(`Summarization error: ${msg.error}`, 'error');
-          this.setBtnLoading(false, 'Summarize Page');
+          this.setBtnLoading(false, isVideo ? 'Summarize Video' : 'Summarize Page');
           this.state.isSummarizing = false;
           port.disconnect();
         }
@@ -478,21 +703,93 @@ export class SummaryView {
     } catch (err) {
       console.error('[SummaryView] Streaming connection error:', err);
       this.showAlert(`Connection failed: ${err.message}`, 'error');
-      this.setBtnLoading(false, 'Summarize Page');
+      this.setBtnLoading(false, isVideo ? 'Summarize Video' : 'Summarize Page');
       this.state.isSummarizing = false;
     }
   }
 
   /**
-   * Constructs the strict system prompt enforcing the 3 sections and language dialect
+   * Constructs strict system prompt for Article or YouTube video in English or Hinglish (Slice 1.4 & 1.5)
    * @param {'en' | 'hinglish'} language 
+   * @param {boolean} isVideo 
    * @returns {string}
    */
-  buildSystemPrompt(language) {
+  buildSystemPrompt(language, isVideo = false) {
+    if (isVideo) {
+      // YouTube Video Prompts (Slice 1.4)
+      if (language === 'hinglish') {
+        return `You are Sahayak, an intelligent AI browser video copilot.
+Your task is to summarize the provided YouTube video in natural, fluent Hinglish (conversational Hindi grammar written using the English/Latin alphabet, keeping all technical, digital, and domain terms in standard English).
+Example: "Yeh video explain karta hai ki microservices architecture kaise scale hoti hai..."
+
+Strict Output Structure:
+### 📌 TL;DR
+[1–2 crisp, impactful sentences in Hinglish summarizing the core message and purpose of the video]
+
+### ⏱️ Video Chapters & Timestamps
+- [MM:SS] [Chapter Name in English] - [1 sentence key detail in Hinglish]
+- [MM:SS] [Chapter Name in English] - [1 sentence key detail in Hinglish]
+- [MM:SS] [Chapter Name in English] - [1 sentence key detail in Hinglish]
+(Provide between 3 and 7 chronological chapters with exact [MM:SS] or [HH:MM:SS] timestamps)
+
+### 💡 Key Insights
+- [Insight 1 in Hinglish]
+- [Insight 2 in Hinglish]
+- [Insight 3 in Hinglish]
+- [Insight 4 in Hinglish]
+- [Insight 5 in Hinglish]
+
+### 🚀 Next Steps & Actionable Takeaways
+- [Actionable takeaway 1 in Hinglish]
+- [Actionable takeaway 2 in Hinglish]
+- [Actionable takeaway 3 in Hinglish]
+
+Rules:
+- Every single bullet under "Video Chapters & Timestamps" MUST start with a bracketed timestamp like [MM:SS] or [HH:MM:SS] (e.g. [02:15]).
+- Strictly produce exactly 5 bullet points under Key Insights.
+- Strictly produce 2–3 items under Next Steps.
+- Ground all facts strictly in the video transcript and chapters. Never hallucinate.
+- Never output pleasantries, apologies, or preamble outside the headers.`;
+      }
+
+      return `You are Sahayak, an elite AI browser video copilot.
+Your task is to deliver a high-value, structured summary of the provided YouTube video with chapterized notes and clickable timestamps.
+
+Strict Output Structure:
+### 📌 TL;DR
+[1–2 crisp, impactful sentences summarizing the core thesis and significance of the video]
+
+### ⏱️ Video Chapters & Timestamps
+- [MM:SS] [Chapter Title] - [Key point discussed at this moment]
+- [MM:SS] [Chapter Title] - [Key point discussed at this moment]
+- [MM:SS] [Chapter Title] - [Key point discussed at this moment]
+(Provide between 3 and 7 chronological chapters with exact [MM:SS] or [HH:MM:SS] timestamps)
+
+### 💡 Key Insights
+- [Key Insight 1]
+- [Key Insight 2]
+- [Key Insight 3]
+- [Key Insight 4]
+- [Key Insight 5]
+
+### 🚀 Next Steps & Actionable Takeaways
+- [Actionable Next Step 1]
+- [Actionable Next Step 2]
+- [Actionable Next Step 3]
+
+Rules:
+- Every single bullet under "Video Chapters & Timestamps" MUST start with a bracketed timestamp like [MM:SS] or [HH:MM:SS] (e.g. [02:15]).
+- Strictly produce exactly 5 bullet points under Key Insights.
+- Strictly produce 2–3 concrete next steps or takeaways.
+- Ground every insight strictly in the provided video transcript and chapters.
+- Do not include any filler intro or conclusion.`;
+    }
+
+    // Standard Article Prompts (Slice 1.3 & 1.5)
     if (language === 'hinglish') {
       return `You are Sahayak, an intelligent AI browser reading assistant.
 Your task is to summarize the provided webpage text into natural, fluent Hinglish (conversational Hindi grammar written using the English/Latin alphabet, keeping all technical, digital, and domain terms in standard English).
-Example: "Yeh article explain karta hai ki Kubernetes clusters ko scale kaise karte hain..."
+Example: "Yeh article explain karta hai ki microservices architecture kaise scale hoti hai..."
 
 Strict Output Structure:
 ### 📌 TL;DR
@@ -540,16 +837,34 @@ Rules:
 - Strictly produce exactly 5 bullet points under Key Insights.
 - Strictly produce 2–3 concrete next steps or takeaways.
 - Ground every insight strictly in the provided text.
-- Do not include any filler intro (e.g., "Here is the summary") or conclusion.`;
+- Do not include any filler intro or conclusion.`;
   }
 
   /**
-   * Constructs the user prompt wrapped in untrusted content delimiters (Edge Case 2.1)
-   * @param {object} article 
+   * Constructs user prompt with untrusted delimiters
+   * @param {object} data 
    * @param {string} language 
+   * @param {boolean} isVideo 
    * @returns {string}
    */
-  buildUserPrompt(article, language) {
+  buildUserPrompt(data, language, isVideo = false) {
+    if (isVideo) {
+      const langDirective = language === 'hinglish'
+        ? 'Summarize this YouTube video in fluent conversational Hinglish following the strict 4 sections with timestamps.'
+        : 'Summarize this YouTube video following the strict 4 sections with timestamps.';
+
+      return `${langDirective}
+
+<<<UNTRUSTED_YOUTUBE_VIDEO_CONTENT>>>
+Video Title: ${data.title}
+Channel / Creator: ${data.channelName || 'Unknown'}
+Duration: ${data.durationFormatted || 'Unknown'}
+Video URL: ${data.url}
+
+${data.textContent}
+<<<END_UNTRUSTED_CONTENT>>>`;
+    }
+
     const langDirective = language === 'hinglish'
       ? 'Summarize this article in fluent conversational Hinglish following the 3 sections.'
       : 'Summarize this article following the strict 3 sections.';
@@ -557,23 +872,24 @@ Rules:
     return `${langDirective}
 
 <<<UNTRUSTED_WEB_PAGE_CONTENT>>>
-Article Title: ${article.title}
-Site / Host: ${article.siteName}
-URL: ${article.url}
-Byline: ${article.byline || 'Unknown'}
+Article Title: ${data.title}
+Site / Host: ${data.siteName}
+URL: ${data.url}
+Byline: ${data.byline || 'Unknown'}
 
-${article.textContent}
+${data.textContent}
 <<<END_UNTRUSTED_CONTENT>>>`;
   }
 
   /**
-   * Parses markdown sections dynamically
+   * Parses markdown sections dynamically (TL;DR, Chapters, Key Insights, Next Steps)
    * @param {string} markdown 
-   * @returns {{ tldr: string, keyInsights: string[], nextSteps: string[] }}
+   * @returns {{ tldr: string, chapters: string[], keyInsights: string[], nextSteps: string[] }}
    */
   parseSections(markdown) {
     const sections = {
       tldr: '',
+      chapters: [],
       keyInsights: [],
       nextSteps: []
     };
@@ -586,6 +902,19 @@ ${article.textContent}
       sections.tldr = tldrMatch[0]
         .replace(/###\s*.*TL;?DR[^\n]*\n?/i, '')
         .trim();
+    }
+
+    // Extract Chapters & Timestamps (Slice 1.4)
+    const chaptersMatch = markdown.match(/###\s*.*(?:Chapters|Timestamps)[\s\S]*?(?=###|$)/i);
+    if (chaptersMatch) {
+      const rawText = chaptersMatch[0]
+        .replace(/###\s*.*(?:Chapters|Timestamps)[^\n]*\n?/i, '')
+        .trim();
+
+      sections.chapters = rawText
+        .split('\n')
+        .map(line => line.replace(/^[-*•\d.]+\s*/, '').trim())
+        .filter(line => line.length > 3);
     }
 
     // Extract Key Insights
@@ -618,25 +947,68 @@ ${article.textContent}
   }
 
   /**
+   * Converts timestamp string like MM:SS or HH:MM:SS to total seconds
+   * @param {string} timeStr 
+   * @returns {number}
+   */
+  parseTimestampToSeconds(timeStr = '') {
+    if (!timeStr) return 0;
+    const cleanStr = timeStr.trim().replace(/^\[|\]$/g, '');
+    const parts = cleanStr.split(':').map(Number);
+    if (parts.length === 3) {
+      return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    }
+    if (parts.length === 2) {
+      return parts[0] * 60 + parts[1];
+    }
+    return 0;
+  }
+
+  /**
+   * Replaces timestamp occurrences like [02:15] with interactive clickable timestamp pills
+   * @param {string} text 
+   * @returns {string} HTML with clickable buttons
+   */
+  formatTextWithClickableTimestamps(text = '') {
+    if (!text) return '';
+    const escaped = this.escapeHTML(text);
+
+    // Matches bracketed timestamps like [02:15] or [1:23:45]
+    return escaped.replace(/\[(\d{1,2}:\d{2}(?::\d{2})?)\]/g, (match, timeStr) => {
+      const sec = this.parseTimestampToSeconds(timeStr);
+      return `<button type="button" class="timestamp-pill" data-seconds="${sec}" title="Seek video to ${timeStr}">▶ [${timeStr}]</button>`;
+    });
+  }
+
+  /**
    * Incrementally updates DOM elements during streaming
    * @param {string} rawText 
+   * @param {boolean} isVideo 
    */
-  renderIncrementalSummary(rawText) {
-    const { tldr, keyInsights, nextSteps } = this.parseSections(rawText);
+  renderIncrementalSummary(rawText, isVideo = false) {
+    const { tldr, chapters, keyInsights, nextSteps } = this.parseSections(rawText);
 
     if (tldr) {
-      this.dom.tldrContent.innerHTML = `<p class="tldr-text">${this.escapeHTML(tldr)}</p>`;
+      this.dom.tldrContent.innerHTML = `<p class="tldr-text">${this.formatTextWithClickableTimestamps(tldr)}</p>`;
+    }
+
+    if (isVideo && chapters && chapters.length > 0) {
+      this.dom.chaptersWrap.classList.remove('hidden');
+      this.dom.chaptersCountBadge.textContent = `${chapters.length} Chapters`;
+      this.dom.chaptersList.innerHTML = chapters
+        .map(item => `<li class="chapter-item">${this.formatChapterLine(item)}</li>`)
+        .join('');
     }
 
     if (keyInsights && keyInsights.length > 0) {
       this.dom.insightsList.innerHTML = keyInsights
-        .map(item => `<li><span class="insight-bullet">▸</span><span>${this.escapeHTML(item)}</span></li>`)
+        .map(item => `<li><span class="insight-bullet">▸</span><span>${this.formatTextWithClickableTimestamps(item)}</span></li>`)
         .join('');
     }
 
     if (nextSteps && nextSteps.length > 0) {
       this.dom.nextStepsList.innerHTML = nextSteps
-        .map((step, idx) => `<li><span class="step-num">${idx + 1}</span><span>${this.escapeHTML(step)}</span></li>`)
+        .map((step, idx) => `<li><span class="step-num">${idx + 1}</span><span>${this.formatTextWithClickableTimestamps(step)}</span></li>`)
         .join('');
     }
   }
@@ -644,39 +1016,142 @@ ${article.textContent}
   /**
    * Renders the finalized summary cards
    * @param {string} fullMarkdown 
+   * @param {boolean} isVideo 
    */
-  renderFinalSummary(fullMarkdown) {
-    const { tldr, keyInsights, nextSteps } = this.parseSections(fullMarkdown);
+  renderFinalSummary(fullMarkdown, isVideo = false) {
+    const { tldr, chapters, keyInsights, nextSteps } = this.parseSections(fullMarkdown);
 
-    // If parsing captured sections properly
-    if (tldr || keyInsights.length > 0) {
-      this.dom.tldrContent.innerHTML = `<p class="tldr-text">${this.escapeHTML(tldr || 'Summary generated.')}</p>`;
+    if (tldr || keyInsights.length > 0 || (isVideo && chapters.length > 0)) {
+      this.dom.tldrContent.innerHTML = `<p class="tldr-text">${this.formatTextWithClickableTimestamps(tldr || 'Summary generated.')}</p>`;
+
+      if (isVideo && chapters && chapters.length > 0) {
+        this.dom.chaptersWrap.classList.remove('hidden');
+        this.dom.chaptersCountBadge.textContent = `${chapters.length} Chapters`;
+        this.dom.chaptersList.innerHTML = chapters
+          .map(item => `<li class="chapter-item">${this.formatChapterLine(item)}</li>`)
+          .join('');
+      } else {
+        this.dom.chaptersWrap.classList.add('hidden');
+      }
 
       if (keyInsights.length > 0) {
         this.dom.insightsList.innerHTML = keyInsights
-          .map(item => `<li><span class="insight-bullet">▸</span><span>${this.escapeHTML(item)}</span></li>`)
+          .map(item => `<li><span class="insight-bullet">▸</span><span>${this.formatTextWithClickableTimestamps(item)}</span></li>`)
           .join('');
       }
 
       if (nextSteps.length > 0) {
         this.dom.nextStepsList.innerHTML = nextSteps
-          .map((step, idx) => `<li><span class="step-num">${idx + 1}</span><span>${this.escapeHTML(step)}</span></li>`)
+          .map((step, idx) => `<li><span class="step-num">${idx + 1}</span><span>${this.formatTextWithClickableTimestamps(step)}</span></li>`)
           .join('');
       }
     } else {
-      // Fallback: If model did not strictly format headers, display full markdown cleanly
+      // Fallback: If model did not strictly format headers, display formatted raw markdown
       this.dom.tldrContent.innerHTML = `<div class="formatted-raw-body">${this.formatSimpleMarkdown(fullMarkdown)}</div>`;
     }
   }
 
   /**
-   * Renders skeleton placeholder lines inside cards during generation
+   * Formats a single chapter line ensuring timestamp is interactive
+   * @param {string} rawLine 
+   * @returns {string}
    */
-  renderSkeletons() {
+  formatChapterLine(rawLine = '') {
+    // Check if line starts with [MM:SS] or MM:SS
+    const match = rawLine.match(/^(?:\[)?(\d{1,2}:\d{2}(?::\d{2})?)(?:\])?\s*[-–—:]?\s*(.*)$/);
+    if (match) {
+      const timeStr = match[1];
+      const desc = match[2];
+      const sec = this.parseTimestampToSeconds(timeStr);
+      return `
+        <button type="button" class="timestamp-pill" data-seconds="${sec}" title="Seek video to ${timeStr}">▶ [${timeStr}]</button>
+        <span class="chapter-title">${this.escapeHTML(desc)}</span>
+      `;
+    }
+
+    return `<span>${this.formatTextWithClickableTimestamps(rawLine)}</span>`;
+  }
+
+  /**
+   * Seeks the active tab video player to the target seconds (Slice 1.4)
+   * @param {number} seconds 
+   * @param {string} timeLabel 
+   * @param {HTMLElement} btnElement 
+   */
+  async seekVideo(seconds, timeLabel = '', btnElement = null) {
+    if (!this.state.activeTab || !this.state.activeTab.id) {
+      console.warn('[SummaryView] Cannot seek video: no active tab.');
+      return;
+    }
+
+    if (btnElement) {
+      btnElement.classList.add('seeking');
+      setTimeout(() => btnElement.classList.remove('seeking'), 800);
+    }
+
+    this.showSeekToast(timeLabel || `${Math.floor(seconds)}s`);
+
+    try {
+      chrome.tabs.sendMessage(
+        this.state.activeTab.id,
+        {
+          type: IPC_MESSAGES.SEEK_YOUTUBE_VIDEO,
+          seconds
+        },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            console.log('[SummaryView] Forwarding seek message via Service Worker...');
+            chrome.runtime.sendMessage({
+              type: IPC_MESSAGES.SEEK_YOUTUBE_VIDEO,
+              tabId: this.state.activeTab.id,
+              seconds
+            });
+          } else {
+            console.log('[SummaryView] Seek acknowledged by tab:', response);
+          }
+        }
+      );
+    } catch (err) {
+      console.error('[SummaryView] Seek error:', err);
+    }
+  }
+
+  /**
+   * Displays subtle floating toast confirming video seeking action
+   * @param {string} timeLabel 
+   */
+  showSeekToast(timeLabel) {
+    if (!this.dom.seekToast) return;
+    this.dom.seekToastText.textContent = `Jumped video player to ${timeLabel}`;
+    this.dom.seekToast.classList.remove('hidden');
+
+    clearTimeout(this._toastTimeout);
+    this._toastTimeout = setTimeout(() => {
+      if (this.dom.seekToast) {
+        this.dom.seekToast.classList.add('hidden');
+      }
+    }, 2000);
+  }
+
+  /**
+   * Renders skeleton placeholder lines inside cards during generation
+   * @param {boolean} isVideo 
+   */
+  renderSkeletons(isVideo = false) {
     this.dom.tldrContent.innerHTML = `
       <div class="streaming-skeleton-line"></div>
       <div class="streaming-skeleton-line short"></div>
     `;
+
+    if (isVideo) {
+      this.dom.chaptersWrap.classList.remove('hidden');
+      this.dom.chaptersList.innerHTML = `
+        <li class="streaming-skeleton-line"></li>
+        <li class="streaming-skeleton-line short"></li>
+      `;
+    } else {
+      this.dom.chaptersWrap.classList.add('hidden');
+    }
 
     this.dom.insightsList.innerHTML = `
       <li class="streaming-skeleton-line"></li>
@@ -694,11 +1169,15 @@ ${article.textContent}
    * Copies formatted markdown summary to clipboard with user feedback
    */
   async copySummaryToClipboard() {
-    if (!this.state.rawMarkdown && !this.state.extractedArticle) return;
+    if (!this.state.rawMarkdown && !this.state.extractedArticle && !this.state.videoData) return;
 
     let textToCopy = this.state.rawMarkdown;
-    if (!textToCopy && this.state.extractedArticle) {
-      textToCopy = `# ${this.state.extractedArticle.title}\nSource: ${this.state.extractedArticle.url}\n\n${this.state.extractedArticle.textContent}`;
+    if (!textToCopy) {
+      if (this.state.videoData) {
+        textToCopy = `# ${this.state.videoData.title}\nSource: ${this.state.videoData.url}\n\n${this.state.videoData.textContent}`;
+      } else if (this.state.extractedArticle) {
+        textToCopy = `# ${this.state.extractedArticle.title}\nSource: ${this.state.extractedArticle.url}\n\n${this.state.extractedArticle.textContent}`;
+      }
     }
 
     try {
