@@ -1777,6 +1777,7 @@ body {
   border: 1px solid rgba(59, 130, 246, 0.3);
   border-radius: var(--radius-md);
   margin-bottom: 4px;
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   animation: slideUpFade 0.2s ease-out;
 }
@@ -1870,6 +1871,7 @@ body {
   right: 0;
   bottom: 0;
   background: rgba(3, 7, 18, 0.88);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   z-index: 100;
   display: flex;
@@ -1969,6 +1971,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  -webkit-user-select: none;
   user-select: none;
   margin: 4px 14px 12px;
 }
@@ -1979,6 +1982,7 @@ body {
   display: block;
   object-fit: contain;
   cursor: crosshair;
+  -webkit-user-select: none;
   user-select: none;
 }
 
