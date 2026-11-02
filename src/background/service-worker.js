@@ -155,6 +155,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Phase 4 Slice 4.2: Saved Skills Engine Handlers
+  if (message.type === IPC_MESSAGES.GET_SAVED_SKILLS) {
+    chrome.storage.local.get([STORAGE_KEYS.SAVED_SKILLS], (result) => {
+      sendResponse({ success: true, skills: result[STORAGE_KEYS.SAVED_SKILLS] || null });
+    });
+    return true;
+  }
+
+  if (message.type === IPC_MESSAGES.SAVE_SKILLS) {
+    chrome.storage.local.set({ [STORAGE_KEYS.SAVED_SKILLS]: message.skills }, () => {
+      sendResponse({ success: true });
+    });
+    return true;
+  }
+
   // Handle YouTube video seek routing to active tab
   if (message.type === IPC_MESSAGES.SEEK_YOUTUBE_VIDEO) {
     const targetTabId = message.tabId || sender?.tab?.id;

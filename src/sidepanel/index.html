@@ -70,6 +70,14 @@
         <span>Agent</span>
       </button>
 
+      <button type="button" class="nav-tab" data-tab="profile" role="tab" id="tab-profile">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        <span>Profile</span>
+      </button>
+
       <button type="button" class="nav-tab" data-tab="settings" role="tab" id="tab-settings">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="12" cy="12" r="3"/>
@@ -508,6 +516,7 @@
 
                 <!-- Quick Errand Suggestion Chips -->
                 <div class="errand-chips-row" id="errand-chips-row">
+                  <button type="button" class="errand-chip" data-goal="Fill this form using my profile">Fill from profile</button>
                   <button type="button" class="errand-chip" data-goal="Fill my name into the form">Fill my name</button>
                   <button type="button" class="errand-chip" data-goal="Select 2026 graduation year">Select 2026 year</button>
                   <button type="button" class="errand-chip" data-goal="Accept terms and conditions">Accept terms</button>
@@ -520,8 +529,8 @@
                     <span>Dry-Run Mode (Highlight only)</span>
                   </label>
                   <div class="errand-limit-wrap">
-                    <span class="errand-limit-label">Step Limit:</span>
-                    <select id="select-errand-max-steps" class="errand-limit-select">
+                    <label class="errand-limit-label" for="select-errand-max-steps">Step Limit:</label>
+                    <select id="select-errand-max-steps" class="errand-limit-select" title="Step Limit" aria-label="Step Limit">
                       <option value="5">5</option>
                       <option value="10" selected>10</option>
                       <option value="15">15</option>
@@ -752,6 +761,11 @@
         </div>
       </section>
 
+      <!-- User Profile Tab View (Phase 4, Slice 4.1) -->
+      <section id="view-profile" class="tab-pane" role="tabpanel">
+        <!-- Rendered by ProfileView -->
+      </section>
+
       <!-- Settings Tab View -->
       <section id="view-settings" class="tab-pane" role="tabpanel">
         <div class="settings-container">
@@ -974,11 +988,39 @@
 
               <!-- Default Dry Run Checkbox -->
               <div class="input-group">
-                <label class="errand-checkbox-label" for="setting-agent-dry-run">
+                <label class="errand-checkbox-label" title="Enable dry-run mode by default for new agent errands">
                   <input type="checkbox" id="setting-agent-dry-run">
-                  <span style="font-weight: 600; color: var(--text-primary); font-size: 0.85rem;">Enable Dry-Run Mode by Default</span>
+                  <span class="checkbox-label-bold">Enable Dry-Run Mode by Default</span>
                 </label>
                 <div class="field-hint">In dry-run mode, the agent highlights target elements upon approval without modifying fields or clicking buttons.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- User Profile Memory Summary Card (Slice 4.1) -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon">👤</span>
+                <div>
+                  <h3 class="card-title">User Profile Memory</h3>
+                  <p class="card-desc">Personal details used to autofill web applications and customize drafts.</p>
+                </div>
+              </div>
+              <button type="button" id="btn-settings-edit-profile" class="btn btn-secondary btn-sm" title="Open and edit User Profile memory">
+                <span>Edit Profile ↗</span>
+              </button>
+            </div>
+
+            <div class="card-body">
+              <div class="profile-preview-box" id="settings-profile-preview">
+                <div class="profile-preview-info">
+                  <strong class="profile-preview-name" id="preview-profile-name">Guest Profile</strong>
+                  <span class="profile-preview-desc" id="preview-profile-details">No personal memory configured yet.</span>
+                </div>
+                <button type="button" id="btn-settings-quick-demo" class="btn btn-ghost btn-sm" title="Quickly populate demo profile">
+                  <span>⚡ Quick Demo</span>
+                </button>
               </div>
             </div>
           </div>

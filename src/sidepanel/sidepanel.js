@@ -7,11 +7,13 @@ import { DEV_CONFIG } from '../shared/env.js';
 import { SummaryView } from './components/summary-view.js';
 import { ChatView } from './components/chat-view.js';
 import { AgentView } from './components/agent-view.js';
+import { ProfileView } from './components/profile-view.js';
 
 // Component References
 let summaryView = null;
 let chatView = null;
 let agentView = null;
+let profileView = null;
 
 // DOM Element References
 const elements = {
@@ -54,7 +56,13 @@ const elements = {
 
   // Agent Errand Controls Settings (Slice 3.5)
   agentMaxStepsSelect: document.getElementById('setting-agent-max-steps'),
-  agentDryRunInput: document.getElementById('setting-agent-dry-run')
+  agentDryRunInput: document.getElementById('setting-agent-dry-run'),
+
+  // User Profile Memory Summary Elements in Settings (Slice 4.1)
+  btnSettingsEditProfile: document.getElementById('btn-settings-edit-profile'),
+  btnSettingsQuickDemo: document.getElementById('btn-settings-quick-demo'),
+  previewProfileName: document.getElementById('preview-profile-name'),
+  previewProfileDetails: document.getElementById('preview-profile-details')
 };
 
 // Application State
@@ -110,6 +118,16 @@ function initSubComponents() {
       onNavigateToSettings: () => switchTab('settings')
     });
   }
+
+  const profileContainer = document.getElementById('view-profile');
+  if (profileContainer) {
+    profileView = new ProfileView({
+      container: profileContainer,
+      onNavigateToAgent: () => switchTab('agent'),
+      onNavigateToSettings: () => switchTab('settings'),
+      onProfileUpdated: (p) => updateSettingsProfilePreview(p)
+    });
+  }
 }
 
 /**
@@ -147,6 +165,8 @@ function switchTab(tabName) {
     chatView.onTabActivated();
   } else if (tabName === 'agent' && agentView) {
     agentView.onTabActivated();
+  } else if (tabName === 'profile' && profileView) {
+    profileView.onTabActivated();
   }
 }
 
@@ -219,6 +239,24 @@ function initSettingsListeners() {
     });
   });
 
+  // Edit Profile Navigation Button in Settings (Slice 4.1)
+  if (elements.btnSettingsEditProfile) {
+    elements.btnSettingsEditProfile.addEventListener('click', () => {
+      switchTab('profile');
+    });
+  }
+
+  // Quick Demo Profile Populate Button in Settings (Slice 4.1)
+  if (elements.btnSettingsQuickDemo) {
+    elements.btnSettingsQuickDemo.addEventListener('click', async () => {
+      if (profileView) {
+        profileView.fillDemoData();
+        await profileView.saveProfile();
+        updateSettingsProfilePreview(profileView.state.profile);
+      }
+    });
+  }
+
   // Language Select in Settings syncs with state
   elements.languageSelect.addEventListener('change', async (e) => {
     await updateLanguage(e.target.value);
@@ -251,7 +289,8 @@ async function loadSavedSettings() {
         STORAGE_KEYS.GROQ_API_KEY,
         STORAGE_KEYS.DEFAULT_MODEL,
         STORAGE_KEYS.LANGUAGE,
-        STORAGE_KEYS.AGENT_SETTINGS
+        STORAGE_KEYS.AGENT_SETTINGS,
+        STORAGE_KEYS.USER_PROFILE
       ]);
     }
 
@@ -287,6 +326,9 @@ async function loadSavedSettings() {
     if (elements.agentDryRunInput) {
       elements.agentDryRunInput.checked = Boolean(appState.agentSettings.dryRun);
     }
+
+    // Populate User Profile Memory Preview in Settings (Slice 4.1)
+    updateSettingsProfilePreview(data[STORAGE_KEYS.USER_PROFILE]);
 
     // Update Header indicators
     updateLanguageUI(appState.language);
@@ -487,6 +529,36 @@ function updateLanguageUI(lang) {
   // Notify AgentView of active language change
   if (agentView && typeof agentView.onLanguageChanged === 'function') {
     agentView.onLanguageChanged(lang);
+  }
+}
+
+/**
+ * Updates User Profile Memory summary card in Settings (Slice 4.1)
+ * @param {object} [profile]
+ */
+function updateSettingsProfilePreview(profile) {
+  if (!elements.previewProfileName || !elements.previewProfileDetails) return;
+
+  if (profile && (profile.fullName || profile.email)) {
+    elements.previewProfileName.textContent = profile.fullName || 'Anonymous Profile';
+    const parts = [];
+    if (profile.collegeOrCompany) parts.push(profile.collegeOrCompany);
+    if (profile.email) parts.push(profile.email);
+    if (Array.isArray(profile.skills) && profile.skills.length > 0) {
+      parts.push(`${profile.skills.length} skills`);
+    } else if (typeof profile.skills === 'string' && profile.skills.trim()) {
+      parts.push(`${profile.skills.split(',').length} skills`);
+    }
+    elements.previewProfileDetails.textContent = parts.join(' • ') || 'Local memory configured';
+    if (elements.btnSettingsQuickDemo) {
+      elements.btnSettingsQuickDemo.textContent = '🔄 Re-apply Demo';
+    }
+  } else {
+    elements.previewProfileName.textContent = 'Guest Profile';
+    elements.previewProfileDetails.textContent = 'No personal memory configured yet.';
+    if (elements.btnSettingsQuickDemo) {
+      elements.btnSettingsQuickDemo.textContent = '⚡ Quick Demo';
+    }
   }
 }
 

@@ -459,7 +459,7 @@ Equip Sahayak with persistent local user profile memory, one-click reusable prom
 
 ### Phase 4 Acceptance Criteria
 
-- [ ] Local user profile safely persists and pre-populates form errands.
+- [x] Local user profile safely persists and pre-populates form errands.
 - [ ] Built-in and custom skills run in one click and export/import cleanly.
 - [ ] Financial domains, password fields, and OTP inputs are deterministically blocked.
 - [ ] Consequential buttons enforce secondary user confirmation.
@@ -488,5 +488,5 @@ Before publishing the project, execute this end-to-end verification checklist:
 | **Human-in-the-Loop Loop** | No DOM action occurs without user clicking "Approve" | [x] |
 | **Safety Guardrails** | Blocks banking domains, password fields, and OTP inputs | [ ] |
 | **Consequential Action Gate** | Requires secondary confirmation for Submit/Pay buttons | [ ] |
-| **Profile Autofill** | Reuses local profile data to complete practice application | [ ] |
+| **Profile Autofill** | Reuses local profile data to complete practice application | [x] |
 | **Skills Management** | Built-in skills run in 1 click; custom skills export/import | [ ] |

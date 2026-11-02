@@ -765,6 +765,35 @@ export async function proposeAgentAction({
     }).join('\n');
   }
 
+  // Format user profile section if available (Slice 4.1 Local User Profile Memory)
+  let profileSection = 'User Profile Memory: None stored.';
+  if (userProfile && typeof userProfile === 'object') {
+    const profileLines = [];
+    const profName = userProfile.fullName || userProfile.name;
+    if (profName) profileLines.push(`- Full Name: "${profName}"`);
+    if (userProfile.email) profileLines.push(`- Email Address: "${userProfile.email}"`);
+    if (userProfile.phone) profileLines.push(`- Contact / Phone: "${userProfile.phone}"`);
+    const profCollege = userProfile.collegeOrCompany || userProfile.college;
+    if (profCollege) profileLines.push(`- College / University / Organization: "${profCollege}"`);
+    if (userProfile.graduationYear) profileLines.push(`- Graduation Year: "${userProfile.graduationYear}"`);
+    if (userProfile.skills) {
+      const skillsStr = Array.isArray(userProfile.skills) ? userProfile.skills.join(', ') : userProfile.skills;
+      profileLines.push(`- Technical Skills: "${skillsStr}"`);
+    }
+    const profGithub = userProfile.githubUrl || userProfile.github;
+    if (profGithub) profileLines.push(`- GitHub Profile URL: "${profGithub}"`);
+    const profLinkedin = userProfile.linkedinUrl || userProfile.linkedin;
+    if (profLinkedin) profileLines.push(`- LinkedIn Profile URL: "${profLinkedin}"`);
+    const profPortfolio = userProfile.portfolioUrl || userProfile.portfolio;
+    if (profPortfolio) profileLines.push(`- Portfolio URL: "${profPortfolio}"`);
+    if (userProfile.preferredTone) profileLines.push(`- Tone Preference: "${userProfile.preferredTone}"`);
+    if (userProfile.notes) profileLines.push(`- Statement of Purpose / Bio: "${userProfile.notes}"`);
+
+    if (profileLines.length > 0) {
+      profileSection = `User Profile Memory (Stored Local Data for Autofill & Personalization):\n${profileLines.join('\n')}`;
+    }
+  }
+
   const langInstruction = language === 'hinglish'
     ? 'Provide the "reason" field in friendly, conversational Hinglish (Hindi written in Latin script with standard English technical terms).'
     : 'Provide the "reason" field in clear, concise English.';
@@ -785,9 +814,19 @@ Strict Execution Rules:
 1. Propose EXACTLY ONE action. Never combine multiple steps.
 2. If the user's goal is already satisfied by past actions, return action: "done".
 3. NEVER target password fields.
-4. If the goal is "Fill my name into the form", find the element labeled "Full Name" or similar, and propose "type" with the name (use "${userProfile?.name || 'Ramesh Kumar'}").
-5. Do NOT submit a form (click consequential Submit buttons) unless the user's explicit goal specifically requested to submit.
-6. ${langInstruction}
+4. When the goal is "Fill this form using my profile" or mentions "profile", extract and map matching fields directly from User Profile Memory:
+   * Full Name -> target input labeled "Full Name" or "Name" (use exact stored name)
+   * Email -> target input labeled "Email" or type="email"
+   * Phone -> target input labeled "Phone", "WhatsApp", or type="tel"
+   * College / Org -> target input labeled "College", "University", "Organization"
+   * Graduation Year -> target select dropdown labeled "Graduation Year" or "Passing Year"
+   * Technical Skills -> target checkboxes or inputs matching the skills in profile
+   * GitHub URL -> target input labeled "GitHub"
+   * LinkedIn URL -> target input labeled "LinkedIn"
+   * Statement -> target textarea labeled "Statement" or "Cover Letter"
+5. If the goal is "Fill my name into the form", find the element labeled "Full Name" or similar, and propose "type" with the stored name (use "${userProfile?.fullName || userProfile?.name || 'Kasturi Mahesh'}").
+6. Do NOT submit a form (click consequential Submit buttons) unless the user's explicit goal specifically requested to submit.
+7. ${langInstruction}
 
 Strict JSON Output Requirement:
 Respond with ONLY a single valid JSON object, without any markdown formatting or code fences:
@@ -795,12 +834,14 @@ Respond with ONLY a single valid JSON object, without any markdown formatting or
   "thought": "Brief 1-sentence reasoning explaining why this element and action was chosen",
   "action": "type",
   "targetElementId": 4,
-  "value": "Ramesh Kumar",
-  "reason": "Enter full name into the Full Name field",
+  "value": "Kasturi Mahesh",
+  "reason": "Enter full name from profile into the Full Name field",
   "isConsequential": false
 }`;
 
   const prompt = `User Goal: "${goal.trim()}"
+
+${profileSection}
 
 Prior Steps History:
 ${historySection}
@@ -808,7 +849,7 @@ ${historySection}
 Current Page Interactive Elements:
 ${compactElements}
 
-Determine the single next action to make progress toward the goal and reply with strict JSON.`;
+Determine the single next action to make progress toward the goal using the stored profile memory and reply with strict JSON.`;
 
   try {
     const result = await generateContent({
@@ -890,11 +931,19 @@ Determine the single next action to make progress toward the goal and reply with
  */
 function generateDeterministicProposal({ goal, actionMap, history = [], userProfile = null }) {
   const g = (goal || '').toLowerCase().trim();
-  const userName = userProfile?.fullName || userProfile?.name || 'Ramesh Kumar';
+  const userName = userProfile?.fullName || userProfile?.name || 'Kasturi Mahesh';
+  const userEmail = userProfile?.email || 'kasturi.mahesh@example.com';
+  const userPhone = userProfile?.phone || '+91 98765 43210';
+  const userCollege = userProfile?.collegeOrCompany || userProfile?.college || 'IIT Bombay';
+  const userGradYear = userProfile?.graduationYear || '2026';
+  const userGithub = userProfile?.githubUrl || userProfile?.github || 'https://github.com/kasturi-mahesh';
+  const userLinkedin = userProfile?.linkedinUrl || userProfile?.linkedin || 'https://linkedin.com/in/kasturi-mahesh';
+  const userSkills = userProfile?.skills || 'JavaScript, Python, React, Chrome Extensions';
+  const userStatement = userProfile?.notes || 'Enthusiastic about building safe human-in-the-loop AI browser systems.';
   const approvedSteps = history.filter(h => h.decision === 'approved');
 
-  // Goal: Name
-  if (g.includes('name')) {
+  // Goal: Name only
+  if (g.includes('name') && !g.includes('form') && !g.includes('profile') && !g.includes('application')) {
     const alreadyFilled = approvedSteps.some(h =>
       (h.action === 'type' && (h.value === userName || (h.reason && h.reason.toLowerCase().includes('name'))))
     );
@@ -925,8 +974,8 @@ function generateDeterministicProposal({ goal, actionMap, history = [], userProf
     }
   }
 
-  // Goal: Year / Graduation
-  if (g.includes('grad') || g.includes('year') || g.includes('2026')) {
+  // Goal: Year / Graduation only
+  if ((g.includes('grad') || g.includes('year') || g.includes('2026')) && !g.includes('form') && !g.includes('profile') && !g.includes('application')) {
     const alreadySelected = approvedSteps.some(h => h.action === 'select');
     if (alreadySelected) {
       return {
@@ -949,15 +998,15 @@ function generateDeterministicProposal({ goal, actionMap, history = [], userProf
         thought: `Found dropdown #${gradEl.id} for graduation year.`,
         action: 'select',
         targetElementId: gradEl.id,
-        value: '2026',
-        reason: `Select "2026" in the ${gradEl.label || 'Graduation Year'} dropdown`,
+        value: userGradYear,
+        reason: `Select "${userGradYear}" in the ${gradEl.label || 'Graduation Year'} dropdown`,
         isConsequential: false
       };
     }
   }
 
-  // Goal: Terms / Agreement
-  if (g.includes('term') || g.includes('agree') || g.includes('condition')) {
+  // Goal: Terms / Agreement only
+  if ((g.includes('term') || g.includes('agree') || g.includes('condition')) && !g.includes('form') && !g.includes('profile')) {
     const termsEl = actionMap.find(el =>
       el.type === 'checkbox' && (
         (el.label || '').toLowerCase().includes('term') ||
@@ -977,7 +1026,7 @@ function generateDeterministicProposal({ goal, actionMap, history = [], userProf
   }
 
   // Goal: Submit
-  if (g.includes('submit')) {
+  if (g.includes('submit') && !g.includes('form') && !g.includes('profile')) {
     const submitEl = actionMap.find(el =>
       (el.label || '').toLowerCase().includes('submit') ||
       el.type === 'submit'
@@ -994,9 +1043,9 @@ function generateDeterministicProposal({ goal, actionMap, history = [], userProf
     }
   }
 
-  // Multi-step form errand (e.g. "Fill internship application", "Fill this form", "Complete form")
-  if (g.includes('form') || g.includes('internship') || g.includes('application') || g.includes('fill') || g.includes('errand')) {
-    // 1. Candidate Name
+  // Comprehensive multi-step form errand (e.g. "Fill this form using my profile", "Fill internship application", "Fill form")
+  if (g.includes('form') || g.includes('profile') || g.includes('internship') || g.includes('application') || g.includes('fill')) {
+    // 1. Candidate Full Name
     const nameEl = actionMap.find(el =>
       (el.label || '').toLowerCase().includes('name') ||
       (el.placeholder || '').toLowerCase().includes('name')
@@ -1010,13 +1059,12 @@ function generateDeterministicProposal({ goal, actionMap, history = [], userProf
         action: 'type',
         targetElementId: nameEl.id,
         value: userName,
-        reason: `Enter full name "${userName}" into the ${nameEl.label} field`,
+        reason: `Enter full name "${userName}" from profile into the ${nameEl.label} field`,
         isConsequential: false
       };
     }
 
     // 2. Candidate Email
-    const userEmail = userProfile?.email || 'ramesh.kumar@example.com';
     const emailEl = actionMap.find(el =>
       (el.label || '').toLowerCase().includes('email') ||
       (el.placeholder || '').toLowerCase().includes('email') ||
@@ -1031,13 +1079,33 @@ function generateDeterministicProposal({ goal, actionMap, history = [], userProf
         action: 'type',
         targetElementId: emailEl.id,
         value: userEmail,
-        reason: `Enter email address "${userEmail}" into the ${emailEl.label} field`,
+        reason: `Enter email address "${userEmail}" from profile into the ${emailEl.label} field`,
         isConsequential: false
       };
     }
 
-    // 3. College / Organization
-    const userCollege = userProfile?.college || 'IIT Bombay';
+    // 3. Contact Phone
+    const phoneEl = actionMap.find(el =>
+      (el.label || '').toLowerCase().includes('phone') ||
+      (el.label || '').toLowerCase().includes('contact') ||
+      (el.label || '').toLowerCase().includes('whatsapp') ||
+      el.type === 'tel'
+    );
+    const phoneFilled = approvedSteps.some(h =>
+      h.action === 'type' && (h.targetElementId === phoneEl?.id || (h.reason && h.reason.toLowerCase().includes('phone')))
+    );
+    if (phoneEl && !phoneFilled) {
+      return {
+        thought: `Found phone input #${phoneEl.id} labeled "${phoneEl.label}".`,
+        action: 'type',
+        targetElementId: phoneEl.id,
+        value: userPhone,
+        reason: `Enter contact number "${userPhone}" from profile into the ${phoneEl.label} field`,
+        isConsequential: false
+      };
+    }
+
+    // 4. College / Organization
     const collegeEl = actionMap.find(el =>
       (el.label || '').toLowerCase().includes('college') ||
       (el.label || '').toLowerCase().includes('university')
@@ -1051,16 +1119,16 @@ function generateDeterministicProposal({ goal, actionMap, history = [], userProf
         action: 'type',
         targetElementId: collegeEl.id,
         value: userCollege,
-        reason: `Enter college name "${userCollege}" into the ${collegeEl.label} field`,
+        reason: `Enter college/university "${userCollege}" from profile into the ${collegeEl.label} field`,
         isConsequential: false
       };
     }
 
-    // 4. Graduation Year
+    // 5. Graduation Year
     const gradEl = actionMap.find(el =>
       (el.label || '').toLowerCase().includes('year') ||
       (el.label || '').toLowerCase().includes('grad') ||
-      el.tag === 'SELECT'
+      (el.tag === 'SELECT' && (el.label || '').toLowerCase().includes('grad'))
     );
     const gradFilled = approvedSteps.some(h =>
       h.action === 'select' && (h.targetElementId === gradEl?.id || (h.reason && h.reason.toLowerCase().includes('grad')))
@@ -1070,17 +1138,126 @@ function generateDeterministicProposal({ goal, actionMap, history = [], userProf
         thought: `Found dropdown #${gradEl.id} for graduation year.`,
         action: 'select',
         targetElementId: gradEl.id,
-        value: '2026',
-        reason: `Select "2026" in the ${gradEl.label || 'Graduation Year'} dropdown`,
+        value: userGradYear,
+        reason: `Select "${userGradYear}" from profile in the ${gradEl.label || 'Graduation Year'} dropdown`,
         isConsequential: false
       };
     }
 
-    // 5. Terms & Agreement
+    // 6. Target Track / Role (if on practice form)
+    const roleEl = actionMap.find(el =>
+      (el.label || '').toLowerCase().includes('track') ||
+      (el.label || '').toLowerCase().includes('role')
+    );
+    const roleFilled = approvedSteps.some(h =>
+      h.action === 'select' && (h.targetElementId === roleEl?.id || (h.reason && h.reason.toLowerCase().includes('track')))
+    );
+    if (roleEl && !roleFilled) {
+      return {
+        thought: `Found internship track dropdown #${roleEl.id}.`,
+        action: 'select',
+        targetElementId: roleEl.id,
+        value: 'ai-systems',
+        reason: 'Select "ai-systems" track in Target Internship Track dropdown',
+        isConsequential: false
+      };
+    }
+
+    // 7. Core Skills Checkboxes
+    const skillsKeywords = typeof userSkills === 'string'
+      ? userSkills.toLowerCase().split(/[,|;]/).map(s => s.trim()).filter(Boolean)
+      : (Array.isArray(userSkills) ? userSkills.map(s => String(s).toLowerCase().trim()) : []);
+
+    const skillCheckboxes = actionMap.filter(el =>
+      el.type === 'checkbox' && (
+        (el.label || '').toLowerCase().includes('javascript') ||
+        (el.label || '').toLowerCase().includes('python') ||
+        (el.label || '').toLowerCase().includes('chrome') ||
+        (el.label || '').toLowerCase().includes('react')
+      )
+    );
+
+    for (const box of skillCheckboxes) {
+      const boxLabel = (box.label || '').toLowerCase();
+      const matchesSkill = skillsKeywords.some(sk => boxLabel.includes(sk) || (sk.includes('js') && boxLabel.includes('javascript')));
+      const alreadyChecked = approvedSteps.some(h => h.action === 'click' && h.targetElementId === box.id);
+      if (matchesSkill && !alreadyChecked) {
+        return {
+          thought: `Found skill checkbox #${box.id} matching profile skills.`,
+          action: 'click',
+          targetElementId: box.id,
+          value: null,
+          reason: `Select skill "${box.label}" matching stored profile`,
+          isConsequential: false
+        };
+      }
+    }
+
+    // 8. GitHub Profile URL
+    const githubEl = actionMap.find(el =>
+      (el.label || '').toLowerCase().includes('github') ||
+      (el.placeholder || '').toLowerCase().includes('github')
+    );
+    const githubFilled = approvedSteps.some(h =>
+      h.action === 'type' && (h.targetElementId === githubEl?.id || (h.reason && h.reason.toLowerCase().includes('github')))
+    );
+    if (githubEl && !githubFilled && userGithub) {
+      return {
+        thought: `Found GitHub input field #${githubEl.id}.`,
+        action: 'type',
+        targetElementId: githubEl.id,
+        value: userGithub,
+        reason: `Enter GitHub profile "${userGithub}" from profile into ${githubEl.label} field`,
+        isConsequential: false
+      };
+    }
+
+    // 9. LinkedIn Profile URL
+    const linkedinEl = actionMap.find(el =>
+      (el.label || '').toLowerCase().includes('linkedin') ||
+      (el.placeholder || '').toLowerCase().includes('linkedin')
+    );
+    const linkedinFilled = approvedSteps.some(h =>
+      h.action === 'type' && (h.targetElementId === linkedinEl?.id || (h.reason && h.reason.toLowerCase().includes('linkedin')))
+    );
+    if (linkedinEl && !linkedinFilled && userLinkedin) {
+      return {
+        thought: `Found LinkedIn input field #${linkedinEl.id}.`,
+        action: 'type',
+        targetElementId: linkedinEl.id,
+        value: userLinkedin,
+        reason: `Enter LinkedIn profile "${userLinkedin}" from profile into ${linkedinEl.label} field`,
+        isConsequential: false
+      };
+    }
+
+    // 10. Statement of Purpose
+    const statementEl = actionMap.find(el =>
+      (el.label || '').toLowerCase().includes('statement') ||
+      (el.label || '').toLowerCase().includes('purpose') ||
+      (el.label || '').toLowerCase().includes('cover') ||
+      el.tag === 'TEXTAREA'
+    );
+    const statementFilled = approvedSteps.some(h =>
+      h.action === 'type' && (h.targetElementId === statementEl?.id || (h.reason && h.reason.toLowerCase().includes('statement')))
+    );
+    if (statementEl && !statementFilled && userStatement) {
+      return {
+        thought: `Found statement of purpose textarea #${statementEl.id}.`,
+        action: 'type',
+        targetElementId: statementEl.id,
+        value: userStatement,
+        reason: `Enter statement of purpose from profile into ${statementEl.label} field`,
+        isConsequential: false
+      };
+    }
+
+    // 11. Terms & Agreement Checkbox
     const termsEl = actionMap.find(el =>
       el.type === 'checkbox' && (
         (el.label || '').toLowerCase().includes('term') ||
-        (el.label || '').toLowerCase().includes('agree')
+        (el.label || '').toLowerCase().includes('agree') ||
+        (el.label || '').toLowerCase().includes('certify')
       )
     );
     const termsChecked = approvedSteps.some(h =>
@@ -1099,11 +1276,11 @@ function generateDeterministicProposal({ goal, actionMap, history = [], userProf
 
     // All form fields completed!
     return {
-      thought: 'All requested application fields have been filled and approved.',
+      thought: 'All requested application fields have been successfully mapped from profile and approved.',
       action: 'done',
       targetElementId: null,
       value: null,
-      reason: 'Application form fields have been successfully completed.',
+      reason: 'Application form fields have been successfully completed using stored profile memory.',
       isConsequential: false
     };
   }

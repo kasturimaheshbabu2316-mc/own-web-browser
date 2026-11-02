@@ -2806,6 +2806,12 @@ body {
   user-select: none;
 }
 
+.checkbox-label-bold {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
 .errand-limit-wrap {
   display: flex;
   align-items: center;
@@ -3394,5 +3400,224 @@ body {
   color: #f87171;
 }
 
+/* ==========================================================================
+   Phase 4, Slice 4.1: User Profile Memory & Smart Autofill Styles
+   ========================================================================== */
 
+.profile-container {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-bottom: 24px;
+}
 
+.profile-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.privacy-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.2px;
+}
+
+.privacy-shield {
+  font-size: 0.75rem;
+}
+
+/* Profile Summary Card */
+.profile-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.profile-avatar-wrap {
+  flex-shrink: 0;
+}
+
+.profile-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--accent-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #ffffff;
+  box-shadow: 0 2px 8px var(--accent-glow);
+  text-transform: uppercase;
+}
+
+.profile-header-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-display-name {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.profile-status-tag {
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  background: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+}
+
+.profile-status-tag.complete {
+  background: rgba(34, 197, 94, 0.18);
+  color: #4ade80;
+}
+
+.profile-display-sub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.profile-progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.profile-progress-bar-bg {
+  width: 100%;
+  height: 6px;
+  background: var(--bg-input);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.profile-progress-bar-fill {
+  height: 100%;
+  background: var(--accent-gradient);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.profile-progress-text {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+/* Quick Actions Bar */
+.profile-quick-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Profile Form */
+.profile-form-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profile-form-card {
+  margin-bottom: 0;
+}
+
+.profile-section-hint {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.input-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 380px) {
+  .input-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.profile-button-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+  padding-bottom: 12px;
+}
+
+/* Settings View Profile Preview Box */
+.profile-preview-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.profile-preview-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.profile-preview-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.profile-preview-desc {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

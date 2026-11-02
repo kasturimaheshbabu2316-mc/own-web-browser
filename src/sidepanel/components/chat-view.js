@@ -481,11 +481,13 @@ export class ChatView {
 
   /**
    * Handles user question submission
+   * @param {string|null} [overrideQuery]
+   * @param {string|null} [skillTitle]
    */
-  async handleUserSubmit() {
+  async handleUserSubmit(overrideQuery = null, skillTitle = null) {
     if (this.state.isGenerating) return;
 
-    let query = this.dom.chatInput.value.trim();
+    let query = (overrideQuery || this.dom.chatInput.value || '').trim();
     const attachedImage = this.state.attachedImage;
 
     // If user attached an image without text, provide a sensible default prompt
@@ -538,7 +540,9 @@ export class ChatView {
     this.dom.emptyState.classList.add('hidden');
 
     // Add User Message to UI & history
-    const userBadge = attachedImage ? '📷 Visual Query' : null;
+    const userBadge = attachedImage
+      ? '📷 Visual Query'
+      : (skillTitle ? `⚡ ${skillTitle}` : null);
     this.appendUserMessage(query, userBadge, attachedImage);
     this.state.messages.push({
       role: 'user',
@@ -561,6 +565,20 @@ export class ChatView {
       model,
       language
     });
+  }
+
+  /**
+   * Executes a direct query from a One-Click Skill (Slice 4.2)
+   * @param {string} query
+   * @param {string} [skillTitle]
+   */
+  async executeDirectQuery(query, skillTitle = null) {
+    if (!query || this.state.isGenerating) return;
+    if (this.dom.chatInput) {
+      this.dom.chatInput.value = query;
+      this.autoResizeInput();
+    }
+    await this.handleUserSubmit(query, skillTitle);
   }
 
   /**

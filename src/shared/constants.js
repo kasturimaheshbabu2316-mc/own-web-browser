@@ -99,7 +99,10 @@ export const IPC_MESSAGES = {
   EXECUTE_ACTION: 'SAHAYAK_EXECUTE_ACTION',
   // Phase 4 Slice 4.1 User Profile Memory messages
   GET_USER_PROFILE: 'SAHAYAK_GET_USER_PROFILE',
-  SAVE_USER_PROFILE: 'SAHAYAK_SAVE_USER_PROFILE'
+  SAVE_USER_PROFILE: 'SAHAYAK_SAVE_USER_PROFILE',
+  // Phase 4 Slice 4.2 Saved Skills Engine messages
+  GET_SAVED_SKILLS: 'SAHAYAK_GET_SAVED_SKILLS',
+  SAVE_SKILLS: 'SAHAYAK_SAVE_SKILLS'
 };
 
 export const DEFAULT_USER_PROFILE = {
@@ -115,4 +118,52 @@ export const DEFAULT_USER_PROFILE = {
   preferredTone: 'formal',
   notes: ''
 };
+
+export const DEFAULT_BUILTIN_SKILLS = [
+  {
+    id: 'exam-revision-notes',
+    title: 'Exam Revision Notes',
+    description: 'Formats definitions, core theories, and sample quiz Q&As from active page content.',
+    promptTemplate: 'Generate structured exam revision notes from this page: 1. Core Definitions & Keywords 2. Fundamental Principles/Theories 3. 3 Practice Multiple-Choice Quiz Questions with detailed answer explanations.',
+    icon: '📚',
+    category: 'Study',
+    targetTab: 'chat',
+    isBuiltIn: true,
+    createdAt: 1730000000000
+  },
+  {
+    id: 'explain-in-hinglish',
+    title: 'Explain in Hinglish',
+    description: 'Translates concepts into colloquial Hindi-English with intuitive real-world analogies.',
+    promptTemplate: 'Explain the core topic of this page in friendly, conversational Hinglish (Hindi written in Roman/Latin script with standard English technical terms). Use an everyday analogy and break it down step-by-step so anyone can understand.',
+    icon: '🇮🇳',
+    category: 'Language',
+    targetTab: 'chat',
+    isBuiltIn: true,
+    createdAt: 1730000000000
+  },
+  {
+    id: 'polite-email-reply',
+    title: 'Polite Email Reply',
+    description: 'Drafts professional, courteous reply to selected message or discussion.',
+    promptTemplate: 'Draft a polite, professional, and articulate email reply to the content or message on this page. Maintain an appreciative and constructive tone, addressing key points and proposing clear next steps.',
+    icon: '✉️',
+    category: 'Communication',
+    targetTab: 'chat',
+    isBuiltIn: true,
+    createdAt: 1730000000000
+  },
+  {
+    id: 'profile-autofill',
+    title: 'Autofill Form from Profile',
+    description: 'Maps stored local profile memory to active form inputs with human approval.',
+    promptTemplate: 'Fill this form using my profile',
+    icon: '📝',
+    category: 'Agent',
+    targetTab: 'agent',
+    isBuiltIn: true,
+    createdAt: 1730000000000
+  }
+];
+
 
