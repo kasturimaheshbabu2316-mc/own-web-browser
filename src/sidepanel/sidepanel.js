@@ -2,18 +2,20 @@
  * Sahayak Extension - Side Panel Controller
  */
 
-import { STORAGE_KEYS, DEFAULT_CONFIG, IPC_MESSAGES } from '../shared/constants.js';
+import { STORAGE_KEYS, DEFAULT_CONFIG, IPC_MESSAGES, DEFAULT_BUILTIN_SKILLS } from '../shared/constants.js';
 import { DEV_CONFIG } from '../shared/env.js';
 import { SummaryView } from './components/summary-view.js';
 import { ChatView } from './components/chat-view.js';
 import { AgentView } from './components/agent-view.js';
 import { ProfileView } from './components/profile-view.js';
+import { SkillsView } from './components/skills-view.js';
 
 // Component References
 let summaryView = null;
 let chatView = null;
 let agentView = null;
 let profileView = null;
+let skillsView = null;
 
 // DOM Element References
 const elements = {
@@ -62,7 +64,13 @@ const elements = {
   btnSettingsEditProfile: document.getElementById('btn-settings-edit-profile'),
   btnSettingsQuickDemo: document.getElementById('btn-settings-quick-demo'),
   previewProfileName: document.getElementById('preview-profile-name'),
-  previewProfileDetails: document.getElementById('preview-profile-details')
+  previewProfileDetails: document.getElementById('preview-profile-details'),
+
+  // One-Click Skills Summary Elements in Settings (Slice 4.2)
+  btnSettingsViewSkills: document.getElementById('btn-settings-view-skills'),
+  btnSettingsNewSkill: document.getElementById('btn-settings-new-skill'),
+  previewSkillsTitle: document.getElementById('preview-skills-title'),
+  previewSkillsDetails: document.getElementById('preview-skills-details')
 };
 
 // Application State
@@ -128,12 +136,29 @@ function initSubComponents() {
       onProfileUpdated: (p) => updateSettingsProfilePreview(p)
     });
   }
+
+  const skillsContainer = document.getElementById('view-skills');
+  if (skillsContainer) {
+    skillsView = new SkillsView({
+      container: skillsContainer,
+      onExecuteSkill: async ({ skill }) => {
+        await executeSkillRecipe(skill);
+      },
+      onSkillsUpdated: (s) => updateSettingsSkillsPreview(s),
+      onNavigateToChat: () => switchTab('chat'),
+      onNavigateToAgent: () => switchTab('agent'),
+      onNavigateToSettings: () => switchTab('settings')
+    });
+  }
 }
 
 /**
  * Initializes Tab Navigation
  */
 function initNavigation() {
+  elements.navTabs = document.querySelectorAll('.nav-tab');
+  elements.tabPanes = document.querySelectorAll('.tab-pane');
+
   elements.navTabs.forEach(tab => {
     tab.addEventListener('click', () => {
       const targetTab = tab.getAttribute('data-tab');
@@ -148,6 +173,9 @@ function initNavigation() {
  */
 function switchTab(tabName) {
   appState.activeTab = tabName;
+
+  elements.navTabs = document.querySelectorAll('.nav-tab');
+  elements.tabPanes = document.querySelectorAll('.tab-pane');
 
   elements.navTabs.forEach(tab => {
     const isActive = tab.getAttribute('data-tab') === tabName;
@@ -165,6 +193,8 @@ function switchTab(tabName) {
     chatView.onTabActivated();
   } else if (tabName === 'agent' && agentView) {
     agentView.onTabActivated();
+  } else if (tabName === 'skills' && skillsView) {
+    skillsView.onTabActivated();
   } else if (tabName === 'profile' && profileView) {
     profileView.onTabActivated();
   }
@@ -257,6 +287,23 @@ function initSettingsListeners() {
     });
   }
 
+  // View Skills Navigation Button in Settings (Slice 4.2)
+  if (elements.btnSettingsViewSkills) {
+    elements.btnSettingsViewSkills.addEventListener('click', () => {
+      switchTab('skills');
+    });
+  }
+
+  // Create Skill Button in Settings (Slice 4.2)
+  if (elements.btnSettingsNewSkill) {
+    elements.btnSettingsNewSkill.addEventListener('click', () => {
+      switchTab('skills');
+      if (skillsView) {
+        skillsView.openEditor(null);
+      }
+    });
+  }
+
   // Language Select in Settings syncs with state
   elements.languageSelect.addEventListener('change', async (e) => {
     await updateLanguage(e.target.value);
@@ -290,7 +337,8 @@ async function loadSavedSettings() {
         STORAGE_KEYS.DEFAULT_MODEL,
         STORAGE_KEYS.LANGUAGE,
         STORAGE_KEYS.AGENT_SETTINGS,
-        STORAGE_KEYS.USER_PROFILE
+        STORAGE_KEYS.USER_PROFILE,
+        STORAGE_KEYS.SAVED_SKILLS
       ]);
     }
 
@@ -329,6 +377,9 @@ async function loadSavedSettings() {
 
     // Populate User Profile Memory Preview in Settings (Slice 4.1)
     updateSettingsProfilePreview(data[STORAGE_KEYS.USER_PROFILE]);
+
+    // Populate One-Click Skills Preview in Settings (Slice 4.2)
+    updateSettingsSkillsPreview(data[STORAGE_KEYS.SAVED_SKILLS]);
 
     // Update Header indicators
     updateLanguageUI(appState.language);
@@ -558,6 +609,51 @@ function updateSettingsProfilePreview(profile) {
     elements.previewProfileDetails.textContent = 'No personal memory configured yet.';
     if (elements.btnSettingsQuickDemo) {
       elements.btnSettingsQuickDemo.textContent = '⚡ Quick Demo';
+    }
+  }
+}
+
+/**
+ * Updates One-Click Skills summary card in Settings (Slice 4.2)
+ * @param {Array} [skills]
+ */
+function updateSettingsSkillsPreview(skills) {
+  if (!elements.previewSkillsTitle || !elements.previewSkillsDetails) return;
+
+  const list = Array.isArray(skills) && skills.length > 0 ? skills : DEFAULT_BUILTIN_SKILLS;
+  const customCount = list.filter(s => !s.isBuiltIn).length;
+  const builtinCount = list.filter(s => s.isBuiltIn).length;
+
+  elements.previewSkillsTitle.textContent = `${list.length} Saved Skills (${builtinCount} Built-in, ${customCount} Custom)`;
+  const sampleTitles = list.slice(0, 3).map(s => s.title).join(', ');
+  elements.previewSkillsDetails.textContent = list.length > 3 ? `${sampleTitles}, +${list.length - 3} more` : sampleTitles;
+}
+
+/**
+ * Executes a One-Click Skill (Slice 4.2)
+ * Dispatches to AgentView for automation errands or ChatView for grounded content analysis
+ * @param {object} skill
+ */
+async function executeSkillRecipe(skill) {
+  if (!skill) return;
+
+  if (skill.targetTab === 'agent') {
+    // Switch to Agent Tab
+    switchTab('agent');
+
+    // Populate errand input & trigger errand
+    if (agentView) {
+      if (agentView.dom && agentView.dom.errandGoalInput) {
+        agentView.dom.errandGoalInput.value = skill.promptTemplate;
+      }
+      await agentView.startErrand(skill.promptTemplate);
+    }
+  } else {
+    // Switch to Chat Tab
+    switchTab('chat');
+
+    if (chatView) {
+      await chatView.executeDirectQuery(skill.promptTemplate, skill.title);
     }
   }
 }

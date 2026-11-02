@@ -70,6 +70,13 @@
         <span>Agent</span>
       </button>
 
+      <button type="button" class="nav-tab" data-tab="skills" role="tab" id="tab-skills" title="One-Click Reusable Skills Engine">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+        </svg>
+        <span>Skills</span>
+      </button>
+
       <button type="button" class="nav-tab" data-tab="profile" role="tab" id="tab-profile">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -761,6 +768,11 @@
         </div>
       </section>
 
+      <!-- Skills Tab View (Phase 4, Slice 4.2) -->
+      <section id="view-skills" class="tab-pane" role="tabpanel">
+        <!-- Rendered by SkillsView -->
+      </section>
+
       <!-- User Profile Tab View (Phase 4, Slice 4.1) -->
       <section id="view-profile" class="tab-pane" role="tabpanel">
         <!-- Rendered by ProfileView -->
@@ -1020,6 +1032,34 @@
                 </div>
                 <button type="button" id="btn-settings-quick-demo" class="btn btn-ghost btn-sm" title="Quickly populate demo profile">
                   <span>⚡ Quick Demo</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- One-Click Skills Engine Summary Card (Slice 4.2) -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon">⚡</span>
+                <div>
+                  <h3 class="card-title">One-Click Skills Engine</h3>
+                  <p class="card-desc">Reusable prompt recipes and automation macros for quick page actions.</p>
+                </div>
+              </div>
+              <button type="button" id="btn-settings-view-skills" class="btn btn-secondary btn-sm" title="Open Skills Engine tab">
+                <span>View Skills ↗</span>
+              </button>
+            </div>
+
+            <div class="card-body">
+              <div class="profile-preview-box" id="settings-skills-preview">
+                <div class="profile-preview-info">
+                  <strong class="profile-preview-name" id="preview-skills-title">4 Saved Skills</strong>
+                  <span class="profile-preview-desc" id="preview-skills-details">Exam Notes, Hinglish, Polite Reply, Autofill Form</span>
+                </div>
+                <button type="button" id="btn-settings-new-skill" class="btn btn-ghost btn-sm" title="Create a custom skill recipe">
+                  <span>+ New Skill</span>
                 </button>
               </div>
             </div>
