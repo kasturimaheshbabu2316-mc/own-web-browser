@@ -140,6 +140,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  // Phase 4 Slice 4.1: User Profile Memory Handlers
+  if (message.type === IPC_MESSAGES.GET_USER_PROFILE) {
+    chrome.storage.local.get([STORAGE_KEYS.USER_PROFILE], (result) => {
+      sendResponse({ success: true, profile: result[STORAGE_KEYS.USER_PROFILE] || null });
+    });
+    return true;
+  }
+
+  if (message.type === IPC_MESSAGES.SAVE_USER_PROFILE) {
+    chrome.storage.local.set({ [STORAGE_KEYS.USER_PROFILE]: message.profile }, () => {
+      sendResponse({ success: true });
+    });
+    return true;
+  }
+
   // Handle YouTube video seek routing to active tab
   if (message.type === IPC_MESSAGES.SEEK_YOUTUBE_VIDEO) {
     const targetTabId = message.tabId || sender?.tab?.id;

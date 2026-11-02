@@ -633,11 +633,14 @@
                   <button type="button" class="btn btn-secondary btn-sm" id="btn-reset-stopped">Start New Errand</button>
                 </div>
 
-                <!-- Step Execution History Accordion -->
+                <!-- Step Execution History Accordion (Slice 3.5 Action Log) -->
                 <div class="proposal-history-drawer" id="proposal-history-drawer">
                   <div class="history-drawer-header" id="btn-toggle-history">
-                    <span class="history-title">Step History (<span id="history-step-count">0</span>)</span>
-                    <span class="history-chevron" id="history-chevron">▼</span>
+                    <span class="history-title">Action Log &amp; Step History (<span id="history-step-count">0</span>)</span>
+                    <div class="history-header-actions">
+                      <button type="button" class="btn-history-export hidden" id="btn-export-history" title="Download Action Log JSON">📥 Export Log</button>
+                      <span class="history-chevron" id="history-chevron">▼</span>
+                    </div>
                   </div>
                   <div class="history-steps-list hidden" id="history-steps-list"></div>
                 </div>
@@ -940,6 +943,42 @@
                   <option value="hinglish">Hinglish (Colloquial Hindi-English in Latin script)</option>
                 </select>
                 <div class="field-hint">Hinglish mixes conversational Hindi phrases with technical English terms.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Agent Errand Controls Card (Slice 3.5) -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="card-icon">🤖</span>
+                <div>
+                  <h3 class="card-title">Agent Errand Controls</h3>
+                  <p class="card-desc">Safety limits and default execution modes for browser tasks.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-body">
+              <!-- Default Max Steps Selection -->
+              <div class="input-group">
+                <label for="setting-agent-max-steps" class="input-label">Default Max Step Limit</label>
+                <select id="setting-agent-max-steps" class="select-input">
+                  <option value="5">5 Steps</option>
+                  <option value="10" selected>10 Steps (Default)</option>
+                  <option value="15">15 Steps</option>
+                  <option value="20">20 Steps</option>
+                </select>
+                <div class="field-hint">Maximum number of actions the agent will propose before halting.</div>
+              </div>
+
+              <!-- Default Dry Run Checkbox -->
+              <div class="input-group">
+                <label class="errand-checkbox-label" for="setting-agent-dry-run">
+                  <input type="checkbox" id="setting-agent-dry-run">
+                  <span style="font-weight: 600; color: var(--text-primary); font-size: 0.85rem;">Enable Dry-Run Mode by Default</span>
+                </label>
+                <div class="field-hint">In dry-run mode, the agent highlights target elements upon approval without modifying fields or clicking buttons.</div>
               </div>
             </div>
           </div>

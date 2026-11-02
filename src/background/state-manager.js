@@ -13,7 +13,48 @@ import { proposeAgentAction } from './ai-orchestrator.js';
 export class StateManager {
   constructor() {
     this.state = this.createInitialState();
-    this.initStorage();
+    this.storageInitPromise = this.initStorage();
+    this.setupTabListeners();
+  }
+
+  /**
+   * Sets up tab lifecycle listeners to guard against tab close or URL navigation mid-errand (Edge Case 5.4)
+   */
+  setupTabListeners() {
+    if (typeof chrome !== 'undefined' && chrome.tabs) {
+      if (chrome.tabs.onRemoved) {
+        chrome.tabs.onRemoved.addListener((closedTabId) => {
+          if (this.state.tabId === closedTabId && this.isTaskActive()) {
+            console.warn(`[StateManager] Target tab ${closedTabId} was closed. Halting task.`);
+            this.state.status = AGENT_STATES.STOPPED;
+            this.state.error = 'Target browser tab was closed. Errand halted.';
+            this.broadcastState();
+          }
+        });
+      }
+      if (chrome.tabs.onUpdated) {
+        chrome.tabs.onUpdated.addListener((updatedTabId, changeInfo) => {
+          if (this.state.tabId === updatedTabId && changeInfo.status === 'loading' && this.isTaskActive()) {
+            console.warn(`[StateManager] Target tab ${updatedTabId} navigated away. Halting task.`);
+            this.state.status = AGENT_STATES.STOPPED;
+            this.state.error = 'Webpage navigated away during task. Errand halted.';
+            this.broadcastState();
+          }
+        });
+      }
+    }
+  }
+
+  /**
+   * Checks if an agent errand is currently actively running
+   * @returns {boolean}
+   */
+  isTaskActive() {
+    return (
+      this.state.status === AGENT_STATES.SCANNING ||
+      this.state.status === AGENT_STATES.AWAITING_APPROVAL ||
+      this.state.status === AGENT_STATES.EXECUTING
+    );
   }
 
   /**
@@ -122,6 +163,10 @@ export class StateManager {
    * @returns {Promise<object>} Current state
    */
   async startTask({ goal, tabId, maxSteps = 10, dryRun = false, language = 'en' }) {
+    if (this.storageInitPromise) {
+      await this.storageInitPromise;
+    }
+
     if (!goal || !goal.trim()) {
       return { success: false, error: 'Task goal is required.' };
     }
@@ -267,6 +312,10 @@ export class StateManager {
    * @returns {Promise<object>} Current state
    */
   async approveStep() {
+    if (this.storageInitPromise) {
+      await this.storageInitPromise;
+    }
+
     if (this.state.status !== AGENT_STATES.AWAITING_APPROVAL || !this.state.proposedAction) {
       return {
         success: false,
@@ -278,19 +327,20 @@ export class StateManager {
     this.state.status = AGENT_STATES.EXECUTING;
     this.broadcastState();
 
-    console.log(`[StateManager] User approved step ${this.state.currentStep}:`, currentProposal);
+    console.log(`[StateManager] User approved step ${this.state.currentStep} (DryRun: ${this.state.dryRun}):`, currentProposal);
 
     let executionResult = { success: true };
 
-    // Execute DOM action if not dry-run and not a terminal action
-    if (!this.state.dryRun && currentProposal.action !== 'done' && currentProposal.action !== 'fail') {
+    // Execute DOM action (dispatched for both live and dry-run so executor can provide visual highlight feedback)
+    if (currentProposal.action !== 'done' && currentProposal.action !== 'fail') {
       try {
         executionResult = await this.sendMessageToTab(this.state.tabId, {
           type: IPC_MESSAGES.EXECUTE_ACTION,
           payload: {
             action: currentProposal.action,
             targetElementId: currentProposal.targetElementId,
-            value: currentProposal.value
+            value: currentProposal.value,
+            dryRun: Boolean(this.state.dryRun)
           }
         });
 
@@ -304,8 +354,6 @@ export class StateManager {
         this.broadcastState();
         return { success: false, error: this.state.error, state: this.getState() };
       }
-    } else if (this.state.dryRun) {
-      console.log(`[StateManager] Dry-run enabled. Skipping DOM mutation for step ${this.state.currentStep}.`);
     }
 
     // Record step in history
@@ -313,6 +361,7 @@ export class StateManager {
       step: this.state.currentStep,
       ...currentProposal,
       decision: 'approved',
+      dryRun: Boolean(this.state.dryRun),
       timestamp: Date.now(),
       executionResult
     });
@@ -343,6 +392,10 @@ export class StateManager {
    * @returns {Promise<object>} Current state
    */
   async skipStep(reason = 'User skipped step') {
+    if (this.storageInitPromise) {
+      await this.storageInitPromise;
+    }
+
     if (this.state.status !== AGENT_STATES.AWAITING_APPROVAL || !this.state.proposedAction) {
       return {
         success: false,
@@ -358,6 +411,7 @@ export class StateManager {
       step: this.state.currentStep,
       ...skippedProposal,
       decision: 'skipped',
+      dryRun: Boolean(this.state.dryRun),
       skipReason: reason,
       timestamp: Date.now()
     });
@@ -377,10 +431,14 @@ export class StateManager {
 
   /**
    * User clicked [ Stop ]
-   * Halts the agent task immediately and clears highlights
+   * Halts the agent task immediately and clears highlights & badges (Slice 3.5 Verification)
    * @returns {object} Current state
    */
-  stopTask() {
+  async stopTask() {
+    if (this.storageInitPromise) {
+      await this.storageInitPromise;
+    }
+
     console.log('[StateManager] User stopped agent task.');
     this.state.status = AGENT_STATES.STOPPED;
 
@@ -389,11 +447,13 @@ export class StateManager {
         step: this.state.currentStep,
         ...this.state.proposedAction,
         decision: 'stopped',
+        dryRun: Boolean(this.state.dryRun),
         timestamp: Date.now()
       });
     }
 
     this.clearHighlightsOnTab();
+    this.removeBadgesOnTab();
     this.broadcastState();
     return { success: true, state: this.getState() };
   }
@@ -402,8 +462,13 @@ export class StateManager {
    * Resets agent to IDLE state
    * @returns {object} Initial state
    */
-  resetTask() {
+  async resetTask() {
+    if (this.storageInitPromise) {
+      await this.storageInitPromise;
+    }
+
     this.clearHighlightsOnTab();
+    this.removeBadgesOnTab();
     this.state = this.createInitialState();
     this.broadcastState();
     return { success: true, state: this.getState() };
@@ -467,6 +532,17 @@ export class StateManager {
     if (this.state.tabId) {
       this.sendMessageToTab(this.state.tabId, {
         type: IPC_MESSAGES.CLEAR_HIGHLIGHTS
+      }).catch(() => {});
+    }
+  }
+
+  /**
+   * Clears and removes numbered badges on active tab (Slice 3.5 verification)
+   */
+  removeBadgesOnTab() {
+    if (this.state.tabId) {
+      this.sendMessageToTab(this.state.tabId, {
+        type: IPC_MESSAGES.REMOVE_BADGES
       }).catch(() => {});
     }
   }

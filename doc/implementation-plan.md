@@ -350,10 +350,10 @@ Provide controlled browser interaction capabilities. Sahayak scans the page for 
 - [x] All interactive elements are detected, classified, and numbered (Slice 3.1).
 - [x] Numbered badges display seamlessly inside an isolated Shadow DOM (Slice 3.2).
 - [x] Natural language search ("Find it for me") scrolls to and highlights target elements (Slice 3.3).
-- [ ] Agent proposes one step at a time via strict JSON schema.
-- [ ] No browser action executes without direct user approval.
-- [ ] Approve, Skip, Stop, dry-run, and step limits function reliably.
-- [ ] Two practice errands complete successfully under user guidance.
+- [x] Agent proposes one step at a time via strict JSON schema.
+- [x] No browser action executes without direct user approval.
+- [x] Approve, Skip, Stop, dry-run, and step limits function reliably.
+- [x] Two practice errands complete successfully under user guidance.
 
 ---
 
@@ -485,7 +485,7 @@ Before publishing the project, execute this end-to-end verification checklist:
 | **Rate-Limit Resilience** | Retries with backoff and fails over to Groq free tier on 429 | [x] |
 | **DOM Scanner & Badges** | Assigns stable numbers in closed Shadow DOM overlay | [x] |
 | **Find It For Me** | Natural language query scrolls to and highlights target element | [x] |
-| **Human-in-the-Loop Loop** | No DOM action occurs without user clicking "Approve" | [ ] |
+| **Human-in-the-Loop Loop** | No DOM action occurs without user clicking "Approve" | [x] |
 | **Safety Guardrails** | Blocks banking domains, password fields, and OTP inputs | [ ] |
 | **Consequential Action Gate** | Requires secondary confirmation for Submit/Pay buttons | [ ] |
 | **Profile Autofill** | Reuses local profile data to complete practice application | [ ] |

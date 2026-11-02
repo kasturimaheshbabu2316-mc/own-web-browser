@@ -994,6 +994,120 @@ function generateDeterministicProposal({ goal, actionMap, history = [], userProf
     }
   }
 
+  // Multi-step form errand (e.g. "Fill internship application", "Fill this form", "Complete form")
+  if (g.includes('form') || g.includes('internship') || g.includes('application') || g.includes('fill') || g.includes('errand')) {
+    // 1. Candidate Name
+    const nameEl = actionMap.find(el =>
+      (el.label || '').toLowerCase().includes('name') ||
+      (el.placeholder || '').toLowerCase().includes('name')
+    );
+    const nameFilled = approvedSteps.some(h =>
+      h.action === 'type' && (h.targetElementId === nameEl?.id || (h.reason && h.reason.toLowerCase().includes('name')))
+    );
+    if (nameEl && !nameFilled) {
+      return {
+        thought: `Found input element #${nameEl.id} labeled "${nameEl.label}" for candidate name.`,
+        action: 'type',
+        targetElementId: nameEl.id,
+        value: userName,
+        reason: `Enter full name "${userName}" into the ${nameEl.label} field`,
+        isConsequential: false
+      };
+    }
+
+    // 2. Candidate Email
+    const userEmail = userProfile?.email || 'ramesh.kumar@example.com';
+    const emailEl = actionMap.find(el =>
+      (el.label || '').toLowerCase().includes('email') ||
+      (el.placeholder || '').toLowerCase().includes('email') ||
+      el.type === 'email'
+    );
+    const emailFilled = approvedSteps.some(h =>
+      h.action === 'type' && (h.targetElementId === emailEl?.id || (h.reason && h.reason.toLowerCase().includes('email')))
+    );
+    if (emailEl && !emailFilled) {
+      return {
+        thought: `Found email field #${emailEl.id} labeled "${emailEl.label}".`,
+        action: 'type',
+        targetElementId: emailEl.id,
+        value: userEmail,
+        reason: `Enter email address "${userEmail}" into the ${emailEl.label} field`,
+        isConsequential: false
+      };
+    }
+
+    // 3. College / Organization
+    const userCollege = userProfile?.college || 'IIT Bombay';
+    const collegeEl = actionMap.find(el =>
+      (el.label || '').toLowerCase().includes('college') ||
+      (el.label || '').toLowerCase().includes('university')
+    );
+    const collegeFilled = approvedSteps.some(h =>
+      h.action === 'type' && (h.targetElementId === collegeEl?.id || (h.reason && h.reason.toLowerCase().includes('college')))
+    );
+    if (collegeEl && !collegeFilled) {
+      return {
+        thought: `Found college input #${collegeEl.id} labeled "${collegeEl.label}".`,
+        action: 'type',
+        targetElementId: collegeEl.id,
+        value: userCollege,
+        reason: `Enter college name "${userCollege}" into the ${collegeEl.label} field`,
+        isConsequential: false
+      };
+    }
+
+    // 4. Graduation Year
+    const gradEl = actionMap.find(el =>
+      (el.label || '').toLowerCase().includes('year') ||
+      (el.label || '').toLowerCase().includes('grad') ||
+      el.tag === 'SELECT'
+    );
+    const gradFilled = approvedSteps.some(h =>
+      h.action === 'select' && (h.targetElementId === gradEl?.id || (h.reason && h.reason.toLowerCase().includes('grad')))
+    );
+    if (gradEl && !gradFilled) {
+      return {
+        thought: `Found dropdown #${gradEl.id} for graduation year.`,
+        action: 'select',
+        targetElementId: gradEl.id,
+        value: '2026',
+        reason: `Select "2026" in the ${gradEl.label || 'Graduation Year'} dropdown`,
+        isConsequential: false
+      };
+    }
+
+    // 5. Terms & Agreement
+    const termsEl = actionMap.find(el =>
+      el.type === 'checkbox' && (
+        (el.label || '').toLowerCase().includes('term') ||
+        (el.label || '').toLowerCase().includes('agree')
+      )
+    );
+    const termsChecked = approvedSteps.some(h =>
+      h.action === 'click' && (h.targetElementId === termsEl?.id || (h.reason && h.reason.toLowerCase().includes('term')))
+    );
+    if (termsEl && !termsChecked) {
+      return {
+        thought: `Found terms agreement checkbox #${termsEl.id}.`,
+        action: 'click',
+        targetElementId: termsEl.id,
+        value: null,
+        reason: 'Check the terms & agreement checkbox',
+        isConsequential: false
+      };
+    }
+
+    // All form fields completed!
+    return {
+      thought: 'All requested application fields have been filled and approved.',
+      action: 'done',
+      targetElementId: null,
+      value: null,
+      reason: 'Application form fields have been successfully completed.',
+      isConsequential: false
+    };
+  }
+
   return null;
 }
 

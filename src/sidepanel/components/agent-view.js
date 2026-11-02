@@ -49,8 +49,37 @@ export class AgentView {
     this.initDOM();
     this.bindEvents();
     this.loadLanguagePreference();
+    this.loadSavedAgentSettings();
     this.refreshActiveTabInfo();
     this.initTaskStateSync();
+  }
+
+  /**
+   * Loads saved agent errand preferences (Slice 3.5)
+   */
+  async loadSavedAgentSettings() {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        const data = await chrome.storage.local.get([STORAGE_KEYS.AGENT_SETTINGS]);
+        if (data[STORAGE_KEYS.AGENT_SETTINGS]) {
+          this.onAgentSettingsChanged(data[STORAGE_KEYS.AGENT_SETTINGS]);
+        }
+      }
+    } catch (_) {}
+  }
+
+  /**
+   * Observer callback when agent settings change in Settings tab (Slice 3.5)
+   * @param {object} settings
+   */
+  onAgentSettingsChanged(settings) {
+    if (!settings) return;
+    if (this.dom.selectMaxSteps && settings.maxSteps) {
+      this.dom.selectMaxSteps.value = String(settings.maxSteps);
+    }
+    if (this.dom.chkDryRun && typeof settings.dryRun !== 'undefined') {
+      this.dom.chkDryRun.checked = Boolean(settings.dryRun);
+    }
   }
 
   /**
@@ -153,6 +182,7 @@ export class AgentView {
       btnResetStopped: this.container.querySelector('#btn-reset-stopped'),
       proposalHistoryDrawer: this.container.querySelector('#proposal-history-drawer'),
       btnToggleHistory: this.container.querySelector('#btn-toggle-history'),
+      btnExportHistory: this.container.querySelector('#btn-export-history'),
       historyStepCount: this.container.querySelector('#history-step-count'),
       historyStepsList: this.container.querySelector('#history-steps-list'),
       historyChevron: this.container.querySelector('#history-chevron')
@@ -376,6 +406,13 @@ export class AgentView {
       });
     }
 
+    if (this.dom.btnExportHistory) {
+      this.dom.btnExportHistory.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.exportActionLog();
+      });
+    }
+
     // Keyboard shortcut for single-step approval when in AWAITING_APPROVAL
     window.addEventListener('keydown', (e) => {
       if (
@@ -573,7 +610,14 @@ export class AgentView {
       if (response && response.state) {
         this.updateTaskUI(response.state);
       }
-      this.showAlert('Errand stopped.', 'info');
+      this.state.badgesVisible = false;
+      if (this.dom.btnToggleBadges) {
+        this.dom.btnToggleBadges.classList.remove('active');
+      }
+      if (this.dom.btnToggleBadgesText) {
+        this.dom.btnToggleBadgesText.textContent = 'Show Badges';
+      }
+      this.showAlert('Errand stopped and badges cleared.', 'info');
     } catch (err) {
       console.error('[AgentView] stopErrand failed:', err);
     }
@@ -587,6 +631,13 @@ export class AgentView {
       await chrome.runtime.sendMessage({
         type: IPC_MESSAGES.RESET_AGENT_TASK
       });
+      this.state.badgesVisible = false;
+      if (this.dom.btnToggleBadges) {
+        this.dom.btnToggleBadges.classList.remove('active');
+      }
+      if (this.dom.btnToggleBadgesText) {
+        this.dom.btnToggleBadgesText.textContent = 'Show Badges';
+      }
       this.updateTaskUI({
         status: AGENT_STATES.IDLE,
         goal: '',
@@ -597,6 +648,43 @@ export class AgentView {
       });
     } catch (err) {
       console.error('[AgentView] resetErrand failed:', err);
+    }
+  }
+
+  /**
+   * Exports the task action log as a downloadable JSON file (Slice 3.5 Action Log)
+   */
+  exportActionLog() {
+    const history = this.state.taskState?.history || [];
+    if (history.length === 0) {
+      this.showAlert('No action log records to export.', 'warning');
+      return;
+    }
+
+    try {
+      const exportPayload = {
+        title: 'Sahayak Task Action Log',
+        taskId: this.state.taskState?.taskId || 'task_log',
+        goal: this.state.taskState?.goal || 'Browser errand',
+        status: this.state.taskState?.status,
+        timestamp: new Date().toISOString(),
+        totalSteps: history.length,
+        steps: history
+      };
+
+      const blob = new Blob([JSON.stringify(exportPayload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sahayak-action-log-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.showAlert('Action Log downloaded successfully!', 'success');
+    } catch (err) {
+      console.error('[AgentView] Export action log failed:', err);
+      this.showAlert(`Failed to export log: ${err.message}`, 'error');
     }
   }
 
@@ -717,28 +805,44 @@ export class AgentView {
   }
 
   /**
-   * Renders history steps in the accordion
+   * Renders history steps in the accordion (Slice 3.5 Action Log)
+   * Preserves history of every step, reason, timestamp, and user decision
    * @param {Array<object>} history
    */
   renderTaskHistory(history = []) {
     if (!this.dom.historyStepCount || !this.dom.historyStepsList) return;
     this.dom.historyStepCount.textContent = history.length;
 
+    if (this.dom.btnExportHistory) {
+      this.dom.btnExportHistory.classList.toggle('hidden', history.length === 0);
+    }
+
     if (history.length === 0) {
-      this.dom.historyStepsList.innerHTML = '<div class="history-empty" style="color:var(--text-muted);font-size:0.7rem;padding:4px 0;">No steps executed yet.</div>';
+      this.dom.historyStepsList.innerHTML = '<div class="history-empty" style="color:var(--text-muted);font-size:0.7rem;padding:6px 0;">No steps executed yet.</div>';
       return;
     }
 
     this.dom.historyStepsList.innerHTML = history.map((item, i) => {
+      const timeStr = item.timestamp ? new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+      const actionName = (item.action || 'action').toUpperCase();
+      const dryRunBadge = item.dryRun ? '<span class="history-dryrun-tag">DRY-RUN</span>' : '';
+
       return `
-        <div class="history-step-item">
-          <div class="history-step-info">
-            <span class="history-step-number" style="font-weight:700;color:var(--text-muted);">#${i + 1}</span>
-            <span class="history-step-action" style="font-weight:600;color:var(--text-primary);text-transform:uppercase;">${this.escapeHTML(item.action)}</span>
-            ${item.targetElementId ? `<span class="history-step-target" style="color:#60a5fa;">#${item.targetElementId}</span>` : ''}
-            ${item.value ? `<span class="history-step-val" style="color:#38bdf8;">"${this.escapeHTML(item.value)}"</span>` : ''}
+        <div class="history-step-card ${item.decision || ''}">
+          <div class="history-step-header">
+            <div class="history-step-title">
+              <span class="history-step-number">Step ${i + 1}</span>
+              <span class="history-action-badge ${item.action || 'type'}">${actionName}</span>
+              ${item.targetElementId ? `<span class="history-target-badge">#${item.targetElementId}</span>` : ''}
+              ${dryRunBadge}
+            </div>
+            <div class="history-step-meta">
+              <span class="history-decision-pill ${item.decision || 'approved'}">${this.escapeHTML(item.decision || '')}</span>
+              ${timeStr ? `<span class="history-timestamp">${timeStr}</span>` : ''}
+            </div>
           </div>
-          <span class="history-decision-pill ${item.decision}">${this.escapeHTML(item.decision)}</span>
+          ${item.value ? `<div class="history-val-row"><span class="history-val-label">Value:</span> <code>"${this.escapeHTML(item.value)}"</code></div>` : ''}
+          ${item.reason ? `<div class="history-step-reason">${this.escapeHTML(item.reason)}</div>` : ''}
         </div>
       `;
     }).join('');

@@ -96,6 +96,23 @@ export const IPC_MESSAGES = {
   RESET_AGENT_TASK: 'SAHAYAK_RESET_AGENT_TASK',
   GET_AGENT_STATE: 'SAHAYAK_GET_AGENT_STATE',
   AGENT_STATE_CHANGED: 'SAHAYAK_AGENT_STATE_CHANGED',
-  EXECUTE_ACTION: 'SAHAYAK_EXECUTE_ACTION'
+  EXECUTE_ACTION: 'SAHAYAK_EXECUTE_ACTION',
+  // Phase 4 Slice 4.1 User Profile Memory messages
+  GET_USER_PROFILE: 'SAHAYAK_GET_USER_PROFILE',
+  SAVE_USER_PROFILE: 'SAHAYAK_SAVE_USER_PROFILE'
+};
+
+export const DEFAULT_USER_PROFILE = {
+  fullName: '',
+  email: '',
+  phone: '',
+  collegeOrCompany: '',
+  graduationYear: '2026',
+  skills: '',
+  portfolioUrl: '',
+  linkedinUrl: '',
+  githubUrl: '',
+  preferredTone: 'formal',
+  notes: ''
 };
 

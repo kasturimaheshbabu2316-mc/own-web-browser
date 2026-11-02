@@ -50,7 +50,11 @@ const elements = {
   clearGroqBtn: document.getElementById('clear-groq-btn'),
   testGroqBox: document.getElementById('test-groq-box'),
   testGroqLatency: document.getElementById('test-groq-latency'),
-  testGroqText: document.getElementById('test-groq-text')
+  testGroqText: document.getElementById('test-groq-text'),
+
+  // Agent Errand Controls Settings (Slice 3.5)
+  agentMaxStepsSelect: document.getElementById('setting-agent-max-steps'),
+  agentDryRunInput: document.getElementById('setting-agent-dry-run')
 };
 
 // Application State
@@ -60,6 +64,10 @@ let appState = {
   groqApiKey: '',
   defaultModel: DEFAULT_CONFIG.MODEL,
   language: DEFAULT_CONFIG.LANGUAGE,
+  agentSettings: {
+    maxSteps: DEFAULT_CONFIG.MAX_STEPS || 10,
+    dryRun: DEFAULT_CONFIG.DRY_RUN || false
+  },
   isKeyVisible: false,
   isGroqKeyVisible: false
 };
@@ -242,7 +250,8 @@ async function loadSavedSettings() {
         STORAGE_KEYS.GEMINI_API_KEY,
         STORAGE_KEYS.GROQ_API_KEY,
         STORAGE_KEYS.DEFAULT_MODEL,
-        STORAGE_KEYS.LANGUAGE
+        STORAGE_KEYS.LANGUAGE,
+        STORAGE_KEYS.AGENT_SETTINGS
       ]);
     }
 
@@ -259,6 +268,10 @@ async function loadSavedSettings() {
     appState.groqApiKey = data[STORAGE_KEYS.GROQ_API_KEY] || '';
     appState.defaultModel = data[STORAGE_KEYS.DEFAULT_MODEL] || DEFAULT_CONFIG.MODEL;
     appState.language = data[STORAGE_KEYS.LANGUAGE] || DEFAULT_CONFIG.LANGUAGE;
+    appState.agentSettings = data[STORAGE_KEYS.AGENT_SETTINGS] || {
+      maxSteps: DEFAULT_CONFIG.MAX_STEPS || 10,
+      dryRun: DEFAULT_CONFIG.DRY_RUN || false
+    };
 
     // Populate Settings UI
     elements.geminiApiKeyInput.value = appState.apiKey;
@@ -268,9 +281,21 @@ async function loadSavedSettings() {
     elements.defaultModelSelect.value = appState.defaultModel;
     elements.languageSelect.value = appState.language;
 
+    if (elements.agentMaxStepsSelect) {
+      elements.agentMaxStepsSelect.value = String(appState.agentSettings.maxSteps || 10);
+    }
+    if (elements.agentDryRunInput) {
+      elements.agentDryRunInput.checked = Boolean(appState.agentSettings.dryRun);
+    }
+
     // Update Header indicators
     updateLanguageUI(appState.language);
     updateStatusPill();
+
+    // Notify AgentView of loaded agent settings
+    if (agentView && typeof agentView.onAgentSettingsChanged === 'function') {
+      agentView.onAgentSettingsChanged(appState.agentSettings);
+    }
 
     // If API key is configured, land directly on Summary tab
     if (appState.apiKey) {
@@ -291,6 +316,10 @@ async function saveSettings() {
   const apiKey = elements.geminiApiKeyInput.value.trim();
   const defaultModel = elements.defaultModelSelect.value;
   const language = elements.languageSelect.value;
+  const maxSteps = elements.agentMaxStepsSelect ? parseInt(elements.agentMaxStepsSelect.value, 10) : 10;
+  const dryRun = elements.agentDryRunInput ? elements.agentDryRunInput.checked : false;
+
+  const agentSettings = { maxSteps, dryRun };
 
   try {
     elements.saveSettingsBtn.classList.add('loading');
@@ -298,15 +327,21 @@ async function saveSettings() {
     await chrome.storage.local.set({
       [STORAGE_KEYS.GEMINI_API_KEY]: apiKey,
       [STORAGE_KEYS.DEFAULT_MODEL]: defaultModel,
-      [STORAGE_KEYS.LANGUAGE]: language
+      [STORAGE_KEYS.LANGUAGE]: language,
+      [STORAGE_KEYS.AGENT_SETTINGS]: agentSettings
     });
 
     appState.apiKey = apiKey;
     appState.defaultModel = defaultModel;
     appState.language = language;
+    appState.agentSettings = agentSettings;
 
     updateLanguageUI(language);
     updateStatusPill(Boolean(apiKey));
+
+    if (agentView && typeof agentView.onAgentSettingsChanged === 'function') {
+      agentView.onAgentSettingsChanged(agentSettings);
+    }
 
     showAlert('Settings saved successfully!', 'success');
   } catch (error) {
