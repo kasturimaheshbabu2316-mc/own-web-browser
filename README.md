@@ -224,6 +224,12 @@ Own AI Browser/
 
 Sahayak includes a local sandbox form for practicing browser automation with zero risk:
 
+```bash
+# Launch Chrome with extension and open the practice testbed in one command:
+npm run practice
+```
+
+Or manually:
 1. Open the Side Panel and click **Agent** tab.
 2. Click **Practice Form** in the top banner (or open `assets/practice/internship-form.html`).
 3. Click **Profile** tab, click **⚡ Demo Data**, and click **Save Profile**.

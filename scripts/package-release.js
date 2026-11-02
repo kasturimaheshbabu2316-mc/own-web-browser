@@ -47,6 +47,7 @@ fs.mkdirSync(STAGE_DIR, { recursive: true });
 // 3. Define files and directories to copy
 const itemsToCopy = [
   { src: 'manifest.json', dest: 'manifest.json' },
+  { src: 'package.json', dest: 'package.json' },
   { src: 'README.md', dest: 'README.md' },
   { src: 'LICENSE', dest: 'LICENSE' },
   { src: 'assets', dest: 'assets' },

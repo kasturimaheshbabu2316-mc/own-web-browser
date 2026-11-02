@@ -1,0 +1,26 @@
+{
+  "name": "sahayak-ai-browser",
+  "version": "1.0.0",
+  "description": "Safe, Human-in-the-Loop AI Browser Assistant Chrome Extension (Manifest V3)",
+  "type": "module",
+  "scripts": {
+    "practice": "node scripts/run-practice.js",
+    "start": "node scripts/run-practice.js",
+    "dev": "node scripts/run-practice.js",
+    "package": "node scripts/package-release.js",
+    "build": "node scripts/package-release.js",
+    "test": "node scripts/run-tests.js"
+  },
+  "keywords": [
+    "chrome-extension",
+    "ai-assistant",
+    "manifest-v3",
+    "human-in-the-loop",
+    "gemini",
+    "groq",
+    "readability",
+    "privacy-first"
+  ],
+  "author": "Kasturi Mahesh",
+  "license": "MIT"
+}
