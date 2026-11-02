@@ -9,6 +9,8 @@
 
 import { AGENT_STATES, IPC_MESSAGES, STORAGE_KEYS, DEFAULT_CONFIG } from '../shared/constants.js';
 import { proposeAgentAction } from './ai-orchestrator.js';
+// Phase 4 Slice 4.3 — Safety Guardrail Engine
+import { runGuardrailGate } from './safety-guardrails.js';
 
 export class StateManager {
   constructor() {
@@ -224,10 +226,30 @@ export class StateManager {
         throw new Error('No interactive elements detected on the page.');
       }
 
+      // Phase 4 Slice 4.3 — Guardrail Gate: G1 domain block + G2 field quarantine
+      const guardrailResult = runGuardrailGate({
+        tabUrl: scanResponse.url || '',
+        actionMap
+      });
+
+      if (!guardrailResult.allowed) {
+        this.state.status = AGENT_STATES.STOPPED;
+        this.state.error = guardrailResult.blockReason;
+        this.state.guardrailBlock = { type: 'domain', reason: guardrailResult.blockReason };
+        this.broadcastState();
+        return { success: false, error: guardrailResult.blockReason, guardrailBlock: true, state: this.getState() };
+      }
+
+      // Use sanitized action map (G2 protected fields quarantined)
+      const safeActionMap = guardrailResult.sanitizedActionMap;
+      if (guardrailResult.quarantinedCount > 0) {
+        console.warn(`[StateManager] Guardrail G2 quarantined ${guardrailResult.quarantinedCount} protected field(s) from action map.`);
+      }
+
       // Automatically render visual badges on page if not already visible
       this.sendMessageToTab(this.state.tabId, {
         type: IPC_MESSAGES.RENDER_BADGES,
-        elements: actionMap
+        elements: safeActionMap
       }).catch(() => {});
 
       // Retrieve user profile if available for autofill context
@@ -242,7 +264,7 @@ export class StateManager {
       // Step 2: Propose single next action via AI model
       const proposalResult = await proposeAgentAction({
         goal: this.state.goal,
-        actionMap,
+        actionMap: safeActionMap,
         history: this.state.history,
         language: this.state.language,
         userProfile

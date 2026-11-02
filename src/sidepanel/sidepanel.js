@@ -3,7 +3,6 @@
  */
 
 import { STORAGE_KEYS, DEFAULT_CONFIG, IPC_MESSAGES, DEFAULT_BUILTIN_SKILLS } from '../shared/constants.js';
-import { DEV_CONFIG } from '../shared/env.js';
 import { SummaryView } from './components/summary-view.js';
 import { ChatView } from './components/chat-view.js';
 import { AgentView } from './components/agent-view.js';
@@ -343,12 +342,19 @@ async function loadSavedSettings() {
     }
 
     let apiKey = data[STORAGE_KEYS.GEMINI_API_KEY] || '';
-    if (!apiKey && DEV_CONFIG && DEV_CONFIG.GEMINI_API_KEY) {
-      apiKey = DEV_CONFIG.GEMINI_API_KEY.trim();
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        await chrome.storage.local.set({ [STORAGE_KEYS.GEMINI_API_KEY]: apiKey });
+    if (!apiKey) {
+      try {
+        const envMod = await import('../shared/env.js');
+        if (envMod?.DEV_CONFIG?.GEMINI_API_KEY) {
+          apiKey = envMod.DEV_CONFIG.GEMINI_API_KEY.trim();
+          if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            await chrome.storage.local.set({ [STORAGE_KEYS.GEMINI_API_KEY]: apiKey });
+          }
+          console.log('[Sahayak SidePanel] Automatically preloaded API key from local environment.');
+        }
+      } catch (_) {
+        // env.js omitted in clean clones / release packages; user configures keys via Settings UI
       }
-      console.log('[Sahayak SidePanel] Automatically preloaded API key from local environment.');
     }
 
     appState.apiKey = apiKey;

@@ -1,145 +1,100 @@
 # Sahayak (सहायक) — Safe, Human-in-the-Loop AI Browser Assistant
 
 [![Manifest V3](https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-blue.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![Model](https://img.shields.io/badge/AI%20Model-Gemini%20Flash--Lite-orange.svg)](https://ai.google.dev/)
-[![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local--First-green.svg)](#privacy-and-security-guarantee)
+[![Model](https://img.shields.io/badge/AI%20Model-Gemini%202.0%20Flash--Lite-orange.svg)](https://ai.google.dev/)
+[![Fallback](https://img.shields.io/badge/Fallback%20Model-Groq%20Llama--3.3--70B-purple.svg)](https://groq.com/)
+[![Privacy](https://img.shields.io/badge/Privacy-100%25%20Local--First-green.svg)](#-privacy-and-security-guarantee)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Status: Complete](https://img.shields.io/badge/Phase%201--4-100%25%20Verified-brightgreen.svg)](doc/implementation-plan.md)
 
-> **Sahayak (सहायक)** is an intelligent, privacy-first Chrome Side-Panel AI assistant designed to read, understand, and interact with the web alongside you. Powered by Google Gemini Flash-Lite and Mozilla Readability, it transforms complex web pages into structured insights, supports natural English & Hinglish communication, and follows a strict **Human-in-the-Loop (HITL)** architecture.
+> **Sahayak (सहायक)** is an autonomous, privacy-first Chrome Side-Panel AI assistant that **reads, understands, and acts with your direct approval**. Powered by Google Gemini Flash-Lite and Groq Llama 3.3, it turns complex webpages into structured insights, converses in English & colloquial Hinglish, and performs browser errands via a code-enforced **Human-in-the-Loop (HITL)** architecture with deterministic safety rails.
 
 ---
 
-## 🌟 Core Philosophy: The Three Pillars
+## 🌟 The Core Subsystems: 4 Vertical Pillars
 
 ```text
-       ┌─────────────────────────────────────────────────────────────┐
-       │                 SAHAYAK ARCHITECTURE PILLARS               │
-       └─────────────────────────────────────────────────────────────┘
-                                      │
-         ┌────────────────────────────┼────────────────────────────┐
-         ▼                            ▼                            ▼
-  👁️  THE EYES                🧠  THE BRAIN                 🤝  THE HANDS
-  Content Extraction          Grounded Reasoning           Approved Action
-  • Cloned DOM Readability    • Zero Hallucination         • Interactive Element Map
-  • Ads & Noise Stripping     • Multimodal Vision          • Visual Action Badges
-  • Paywall / SPA Defenses    • Bilingual (EN / Hinglish)  • Human Approval Required
+       ┌────────────────────────────────────────────────────────────────────────┐
+       │                       SAHAYAK 4-PILLAR ARCHITECTURE                    │
+       └────────────────────────────────────────────────────────────────────────┘
+                                            │
+        ┌───────────────────┬───────────────┴───────────────┬───────────────────┐
+        ▼                   ▼                               ▼                   ▼
+ 👁️ THE EYES         🧠 THE BRAIN                    🤝 THE HANDS         🛡️ SAFETY & MEMORY
+ Content Perception  Grounded Reasoning              Controlled Action    Deterministic Rails
+ • Cloned DOM Read   • Page-Grounded Chat            • DOM Scanner        • Local Profile Memory
+ • Noise & Ad Strip  • Multimodal Vision (Crop)      • Shadow DOM Badges  • 1-Click Skills Engine
+ • YouTube Chapters  • Context-Menu AI Actions       • Single-Step HITL   • G1 Domain Blacklist
+ • Bilingual Toggle  • Groq Circuit-Breaker Fallback • Dry-Run Mode       • G2 Field Quarantine
+ (EN / Hinglish)     • Zero-Hallucination Gate       • Action Log JSON    • G3 Consequential Modal
+                                                                          • G4 Esc Kill Switch
 ```
 
 1. **The Eyes (Read & Extract)**: Clones the active tab's DOM to extract noise-free article text without mutating the page or leaking state.
-2. **The Brain (Understand & Ground)**: Operates strictly within XML-delimited untrusted web boundaries, preventing prompt injections and hallucinations while streaming responses via low-latency Server-Sent Events (SSE).
-3. **The Hands (Act with Approval)**: Scans interactive elements, renders non-invasive numbered badges, and proposes single deterministic actions requiring explicit user confirmation before executing.
+2. **The Brain (Understand & Ground)**: Operates strictly within delimited web boundaries, preventing prompt injections and hallucinations while streaming responses via low-latency Server-Sent Events (SSE).
+3. **The Hands (Act with Approval)**: Scans interactive elements, renders non-invasive numbered badges in an isolated Shadow DOM, and formulates single-step proposals requiring explicit human confirmation before executing.
+4. **Memory, Safety & Rails**: Retains user profile memory locally, provides one-click prompt skills, and enforces code-level deterministic safety rails that block banking sites, quarantine credentials, and gate consequential mutations.
 
 ---
 
-## 🚀 Key Features
+## 🚀 Complete Feature Walkthrough
 
-### 📌 Structured 3-Part Summarization
+### 👁️ Phase 1: The Eyes — Read the Web
 
-Extracts any article, blog, documentation, or news story into three distinct, actionable cards:
+* **📌 Structured 3-Part Article Summarization**:
+  Extracts clean text using Mozilla Readability and formats it into three actionable cards:
+  * **TL;DR**: 1–2 crisp sentences capturing the core thesis.
+  * **Key Insights**: Exactly 5 distilled takeaways and data points.
+  * **Next Steps**: 2–3 actionable recommendations for the reader.
+* **🎥 YouTube Public Video Summarizer & Clickable Timestamps**:
+  Automatically detects YouTube videos (`watch?v=*` and `/shorts/*`), extracts chapters/captions, and renders clickable `[MM:SS]` timestamp buttons. Clicking any timestamp dispatches an IPC seek command (`video.currentTime = seconds`) to immediately jump playback with an animated on-screen HUD.
+* **🌐 Bilingual Dialect Toggle (English & Hinglish)**:
+  Switch instantly using the top header segment control (`EN` / `Hinglish`). Hinglish produces conversational Hindi grammar written in Latin script while retaining all English technical terms (*"Yeh article explain karta hai ki microservices architecture kaise scale hoti hai..."*).
 
-* **📌 TL;DR**: 1–2 crisp, impactful sentences capturing the core thesis.
-* **💡 Key Insights**: Exactly 5 distilled takeaways and data points.
-* **🚀 Next Steps & Actionable Takeaways**: 2–3 practical recommendations for the reader.
+### 🧠 Phase 2: The Brain — Understand Page & Screen
 
-### 🎥 YouTube Public Video Summarizer & Clickable Timestamps (Slice 1.4)
+* **💬 Grounded Page Chat Engine**:
+  Conversational side panel chat strictly grounded in active page content. Features a strict negative constraint: queries about information not on the page are declined (*"I cannot find this information in the current page."*).
+* **🖱️ Right-Click Context-Menu AI Actions**:
+  Select text on any webpage and right-click to invoke:
+  * `Sahayak: Explain this` — Simplifies jargon and clarifies context.
+  * `Sahayak: Translate to Hindi / Hinglish` — Translates into conversational Hinglish.
+  * `Sahayak: Draft a reply` — Generates quick and professional response options.
+* **📷 Visual Multimodal Understanding (Capture & Ask)**:
+  Captures the visible viewport, displays an HTML5 coordinate cropping modal, normalizes High-DPI / Retina pixel coordinates, and queries Gemini Vision to analyze infographics, charts, tables, and UI layouts.
+* **🔄 Free-Tier Resilience & Groq Fallback Engine**:
+  Zero-downtime operation for free-tier users. Automatically detects HTTP 429 rate limits or HTTP 503 server overloads, applies exponential backoff with jitter, and fails over to Groq's high-speed `llama-3.3-70b-versatile` endpoint.
 
-Automatically detects YouTube videos (`youtube.com/watch?v=*` and `/shorts/*`), extracts video metadata, description, chapters, and captions:
+### 🤝 Phase 3: The Hands — Act With User Approval
 
-* **⏱️ Video Chapters & Timestamps**: Chronological chapter breakdown where each timestamp like `[02:15]` is an interactive, clickable button.
-* **Direct Player Navigation**: Clicking any timestamp immediately dispatches an IPC seek command to the active YouTube tab (`video.currentTime = seconds`), jumping playback with an animated on-screen HUD.
-* **Edge-Case Resilience**: Deterministically flags active live streams and bypasses pre-roll/mid-roll advertisements to ensure transcript accuracy.
+* **🎯 Interactive Element Scanner**:
+  Scans buttons, inputs, links, and selects. Filters invisible elements and hidden inputs. Assigns sequential integer IDs (`#1`, `#2`, `#3`...) with 8-tier accessible label resolution.
+* **🏷️ Numbered Badges in Closed Shadow DOM**:
+  Renders visual badge pills anchored to targets inside `#sahayak-badge-host` with closed Shadow DOM (`mode: 'closed'`), guaranteeing zero style leakage, no page layout shifts, and scroll tracking.
+* **🔍 "Find It For Me" Natural Language Locator**:
+  Ask *"Where is the submit button?"* or *"Where do I enter my college?"*. Grounded AI returns target element ID, and content script smoothly scrolls to it with an amber glowing pulse ring.
+* **🤖 Single-Step Human-in-the-Loop State Machine**:
+  Task execution pauses in `AWAITING_APPROVAL` at every single step. Shows target element, action type, value to type, and AI reason. **Zero DOM mutations take place without user clicking [Approve]**.
+* **⚙️ Synthetic DOM Execution & Safety Controls**:
+  Dispatches framework-compliant synthetic events (React, Vue, Angular prototype value setters). Features configurable step limits (5/10/15), Dry-Run Mode (highlights without clicking/typing), and downloadable JSON Action Logs.
 
-### 🌐 Bilingual Dialect Toggle: English & Hinglish (Slice 1.5)
+### 🛡️ Phase 4: Memory, Safety & Reusable Skills
 
-Switch instantly using the top header segment control (`EN` / `Hinglish`):
-
-* **Standard English**: Crisp, authoritative summaries with industry-standard terminology.
-* **Conversational Hinglish**: Natural, colloquial Hindi-English mixing written in the Latin alphabet while retaining all technical and domain terms (e.g., *"Yeh video explain karta hai ki microservices architecture kaise scale hoti hai..."*).
-* **Storage Synchronization**: Preferences persist locally via `chrome.storage.local` across sessions and sync bidirectionally with Settings.
-
-### 💬 Grounded Page Chat Engine (Slice 2.1)
-
-Conversational chat in the Side Panel strictly grounded in the active browser tab's content:
-
-* **Strict Negative Constraint**: When a user queries information absent from the page (e.g., general trivia, outside facts), the assistant strictly refuses: *"I cannot find this information in the current page."*
-* **Multi-Turn Session Memory**: In-memory message history tracks questions and follow-ups within the active reading session.
-* **Bilingual Support**: Answers fluently in standard English or natural conversational Hinglish matching the active language toggle.
-* **Context Synchronization Bar**: Displays live word count and page metadata with a one-click **Sync** button to re-read updated page DOM.
-* **Suggestion Chips & Copy Actions**: One-click prompt chips for quick page exploration and direct copy buttons for AI replies.
-
-### 🖱️ Right-Click Context Menu AI Actions (Slice 2.2)
-
-Highlight any text on any webpage and right-click to invoke instant AI actions:
-
-* **⚡ Sahayak: Explain this**: Breaks down complicated paragraphs, defines obscure jargon, and clarifies meaning and context.
-* **🌐 Sahayak: Translate to Hindi / Hinglish**: Converts English text into natural, conversational Hinglish (Hindi written in Latin alphabet, retaining technical terminology).
-* **✍️ Sahayak: Draft a reply**: Generates two context-aware response options for messages, emails, or posts: (1) Quick & Crisp (1-2 sentences), and (2) Detailed & Professional.
-* **Seamless Side Panel Activation**: Automatically opens the Side Panel via user gesture, switches to Chat, and begins streaming the response with full multi-turn conversational follow-up memory.
-
-### 📷 Visual Multimodal Understanding: Capture & Ask (Slice 2.3)
-
-Instantly capture what you are viewing on the active webpage to ask visual questions about charts, diagrams, error messages, and UI layouts:
-
-* **One-Click Viewport Capture**: Trigger screenshot capture directly from the header action button or the camera attachment icon in the Chat input bar.
-* **Interactive HTML5 Coordinate Cropping**: An overlay modal lets users drag a marquee selection to crop a specific chart, figure, or table with live pixel dimension feedback.
-* **High-DPI Scale Normalization (Edge Case 2.2)**: Automatically resolves physical vs. CSS display pixel differences (`actualWidth / clientWidth`), ensuring pixel-accurate crops on Retina and 4K displays.
-* **Gemini Vision Processing**: Transmits inline base64 image data parts to Google's multimodal Gemini models (`gemini-flash-lite-latest` and `gemini-flash-latest`), delivering detailed visual reasoning on axes, data series, error codes, and practical takeaways.
-* **Bilingual Visual Reasoning**: Explain charts and infographics in English or natural conversational Hinglish.
-
-### 🔄 Free-Tier Resilience & Groq Fallback Engine (Slice 2.4)
-
-Zero-downtime free-tier operation designed for high developer productivity:
-
-* **Exponential Backoff & Jitter**: Automatically catches HTTP 429 (rate-limiting) and HTTP 503 (server overload) from Gemini, performing up to 2 progressive retries with jitter (`1000ms * 2^attempt + jitter`).
-* **Groq Llama-3.3-70b Fallback**: If Gemini remains throttled, Sahayak seamlessly converts message structures to OpenAI format and executes instant failover via Groq's high-speed inference engine (`llama-3.3-70b-versatile`).
-* **Dynamic Status Indicators**: Header indicator pill and message headers dynamically update to reflect real-time provider state:
-  * 🟢 **Gemini Flash-Lite Active**: Primary engine operational.
-  * 🟠 **Rate-limited. Switched to Groq Fallback**: Circuit breaker active with Llama-3.3 fallback.
-* **Independent Key Testing**: Settings view provides dedicated configuration, visibility toggles, and live connection testing for both Gemini and Groq API keys.
-
-### 🎯 Interactive Element Scanner & Action Map (Phase 3 Slice 3.1)
-
-Enables controlled browser perception by scanning the active document for all actionable elements while enforcing deterministic safety guardrails:
-
-* **Actionable Element Detection**: Scans buttons (`button`, `[role="button"]`, submit/reset inputs), links (`a[href]`, `[role="link"]`), text fields (`input`, `textarea`), and choice controls (`select`, `checkbox`, `radio`).
-* **Physical Visibility Filtering**: Strictly excludes invisible or occluded elements (`offsetWidth/Height > 0`, computed styles `visibility !== 'hidden'`, `display !== 'none'`, `opacity > 0.05`).
-* **Deterministic Security Quarantine (Slice 4.3 Baseline)**: Strictly skips password inputs (`type="password"`) and hidden inputs (`type="hidden"`). Quarantined fields are never tagged or targeted.
-* **8-Tier Accessible Label Resolution**: Computes concise, human-readable labels falling back gracefully across `aria-label` ➔ `aria-labelledby` ➔ `<label for="...">` ➔ parent `<label>` ➔ `placeholder` ➔ `innerText` ➔ `value` ➔ `title` ➔ `name/id`.
-* **Consequential Action Detection**: Automatically flags buttons triggering state mutations (`submit`, `pay`, `order`, `delete`, `apply`, `confirm`) with visual warning badges.
-* **Stable Sequential ID Tagging**: Assigns sequential integer attributes `data-sahayak-id="1, 2, 3..."` on the active DOM and logs structured tables to the browser console.
-* **Side Panel Agent View**: Features real-time metrics cards (Total, Inputs, Buttons, Links, Consequential), filter tabs, search filtering, and one-click **Highlight on Page** with smooth scrolling and glowing cyan pulse rings.
-* **Practice Sandbox Testbed**: Includes [`assets/practice/internship-form.html`](file:///c:/Users/kastu/Desktop/Own%20AI%20Browser/assets/practice/internship-form.html) for safe testing of form filling and agent errands.
-
-### 🏷️ Numbered Action Map & Shadow DOM Badges (Phase 3 Slice 3.2)
-
-Renders non-invasive visual badges (`#1`, `#2`, `#3`...) anchored to interactive elements:
-
-* **Closed Shadow DOM Isolation**: Injected within `#sahayak-badge-host` using `host.attachShadow({ mode: 'closed' })` guaranteeing zero style leakage, no page layout shifts, and immunity to host webpage CSS rules.
-* **Scroll & Viewport Tracking**: Continuously synchronizes badge positions on scroll and window resize events via throttled `requestAnimationFrame` loops.
-* **On-Demand Visibility Toggle**: One-click **Show Badges / Hide Badges** button in the Side Panel header lets users toggle visual badges on demand.
-* **Consequential Styling**: Badges on mutation actions (`submit`, `delete`, `pay`) render with distinct amber warning styling.
-
-### 🔍 "Find It For Me" Natural Language Locator (Phase 3 Slice 3.3)
-
-Instantly find any button, input field, or link on a webpage using natural language:
-
-* **Natural Language Queries**: Ask questions like *"Where is the submit button?"*, *"Where do I enter my college?"*, or *"Where are the terms?"*.
-* **Grounded AI Matching**: Prompts Gemini Flash-Lite with the compact action map and query, producing structured JSON `{ found, targetElementId, explanation }`.
-* **Smooth Auto-Scroll**: Smoothly scrolls the target element into the center of the viewport via `element.scrollIntoView({ behavior: 'smooth', block: 'center' })`.
-* **Amber Glowing Pulse**: Emits a prominent glowing amber pulse ring (`.sahayak-find-pulse`) directly around the target element without clicking or mutating the page.
-* **Bilingual Explanations**: Delivers locator explanations in English or colloquial Hinglish matching the active language setting.
-
-### ⚡ Ultra-Low Latency Streaming UI
-
-Real-time typewriter streaming via Chrome's native streaming port (`sahayak-stream-port`) connected directly to Google's REST streaming API (`gemini-flash-lite-latest`), delivering full summaries in ~2 seconds.
-
-### 🛡️ Production Web Edge-Case Defenses
-
-* **Single-Page Application (SPA) Retries**: 5-step polling loop with mutation detection for hydrating Next.js, React, and Substack pages.
-* **Live Stream & Ad Detection**: Bypasses YouTube ad players and warns on active live streams.
-* **Paywall & Subscription Awareness**: Heuristically detects gated articles and extracts available preview content with user alerts.
-* **Token Budget Safeguards**: Automatically condenses long documents (>18,000 words) using hierarchical head/section/tail chunking.
-* **Anti-Prompt Injection Guardrails**: Isolates page text inside `<<<UNTRUSTED_WEB_PAGE_CONTENT>>>` and `<<<UNTRUSTED_YOUTUBE_VIDEO_CONTENT>>>` XML boundaries.
+* **👤 Local User Profile Memory & Smart Autofill (Slice 4.1)**:
+  Stores Full Name, Email, Phone, College/Org, Graduation Year, Skills, Portfolio, LinkedIn, and GitHub 100% locally in `chrome.storage.local`. Errand *"Fill this form using my profile"* maps stored profile keys to form inputs for single-click approval. Includes demo data generator, practice autofill launcher, and JSON export/import.
+* **⚡ One-Click Reusable Skills Engine (Slice 4.2)**:
+  Pre-installed built-in skills:
+  1. **Exam Revision Notes** — Formats definitions, core theories, and 3 practice quiz questions.
+  2. **Explain in Hinglish** — Translates concepts into colloquial Hindi-English with analogies.
+  3. **Polite Email Reply** — Drafts professional, courteous reply.
+  4. **Autofill Form from Profile** — Direct agent errand mapping.
+  Custom skill drawer allows creating, editing, deleting, exporting (`sahayak-skills.json`), and importing skills with conflict-free merging.
+* **🔒 Deterministic Safety Guardrail Engine (Slice 4.3)**:
+  Four code-enforced guardrails that protect the user without relying on model judgment:
+  * **Guardrail 1 (Restricted Domain Blacklist)**: Rejects execution on banking and payment sites (`netbanking`, `hdfc`, `sbi`, `icici`, `paypal`, `stripe`, `razorpay`, `paytm`, `billdesk`) with a high-visibility security banner.
+  * **Guardrail 2 (Protected Field Quarantine)**: Automatically strips `type="password"`, `autocomplete="current-password"`, `autocomplete="one-time-code"`, and fields matching `/(otp|cvv|cardnumber|pin|ssn|passcode)/i`.
+  * **Guardrail 3 (Consequential Action Gate)**: Actions targeting `Submit`, `Pay Now`, `Order`, `Delete`, or `Transfer` trigger a high-visibility red modal requiring secondary confirmation.
+  * **Guardrail 4 (Immediate Kill Switch)**: Pressing `Esc` or clicking the sticky red **Emergency Stop** button instantly halts the running task and clears badges.
 
 ---
 
@@ -147,128 +102,171 @@ Real-time typewriter streaming via Chrome's native streaming port (`sahayak-stre
 
 ```mermaid
 graph TD
-    User([User in Chrome]) -->|Opens Side Panel| SP[Side Panel Controller]
-    SP -->|chrome.tabs.sendMessage| CS[Content Script: extractor.js]
-    CS -->|document.cloneNode| DOM[Cloned DOM]
-    DOM -->|Clean Overlays & Cookies| CR[Clean DOM]
-    CR -->|Mozilla Readability| RD[Parsed Article Content]
-    RD -->|IPC Response| SP
-    SP -->|chrome.runtime.connect| SW[Service Worker: service-worker.js]
-    SW -->|SSE Stream POST| GEMINI[Google Gemini Flash-Lite API]
-    GEMINI -->|Tokens Stream| SW
-    SW -->|postMessage chunks| SP
-    SP -->|Incremental Markdown Parse| UI[Structured 3-Part Cards]
+    User([User]) -->|Interacts| SP[Side Panel: index.html]
+    SP -->|Tabs API| EXT[Content Scripts]
+
+    subgraph Browser Tab
+        EXT -->|readability.js| RD[Cloned DOM Readability]
+        EXT -->|scanner.js| SC[Interactive Element Scanner]
+        EXT -->|overlay.js| SH[Closed Shadow DOM Badges]
+        EXT -->|executor.js| EX[Synthetic DOM Event Dispatcher]
+    end
+
+    subgraph Service Worker [MV3 Background Service Worker]
+        SP -->|IPC Messages| SW[service-worker.js]
+        SW -->|State Machine| SM[state-manager.js]
+        SW -->|G1-G4 Checks| SG[safety-guardrails.js]
+        SW -->|AI Router| AO[ai-orchestrator.js]
+    end
+
+    subgraph Cloud AI Providers
+        AO -->|Direct REST Stream| GEMINI[Google Gemini 2.0 Flash-Lite]
+        AO -->|Rate Limit Failover| GROQ[Groq Llama 3.3 70B]
+    end
+
+    subgraph Local Storage
+        SP & SW -->|chrome.storage.local| LMEM[(Local User Memory & Skills)]
+    end
 ```
 
 ---
 
-## 📦 Project Structure
+## 📦 Project Directory Structure
 
 ```text
 Own AI Browser/
-├── manifest.json              # Chrome Extension Manifest V3 configuration
-├── .gitignore                 # Excludes .env, local credentials, and build caches
+├── manifest.json              # Chrome Extension Manifest V3 specification
+├── .gitignore                 # Excludes .env, build artifacts, and release ZIPs
+├── LICENSE                    # MIT License
+├── README.md                  # Comprehensive technical documentation
+├── docs/                      # GitHub Pages static landing site
+│   └── index.html             # Responsive single-page showcase
+├── scripts/
+│   └── package-release.js     # Production release packager
 ├── assets/
-│   ├── icons/                 # Extension toolbar and webstore icons (16, 48, 128px)
-│   └── practice/              # Safe sandbox practice testbeds (internship-form.html)
-├── doc/                       # Reference architecture & planning documents
+│   ├── icons/                 # Extension toolbar & store icons (16, 48, 128px)
+│   └── practice/              # Safe sandbox practice testbeds
+│       └── internship-form.html # Standard practice form testbed
+├── doc/                       # Architecture & specification documents
 │   ├── ProblemStatement.md    # Product requirements and technical foundation
 │   ├── architecture.md        # IPC contracts, state machine, and threat model
-│   ├── implementation-plan.md # 4-Phase, 16-slice progressive engineering plan
+│   ├── implementation-plan.md # 4-Phase, 17-slice progressive engineering plan
 │   └── edge-case.md           # Failure modes and deterministic mitigations catalog
 └── src/
     ├── background/
-    │   ├── service-worker.js  # MV3 Background worker, side panel lifecycle & port router
-    │   ├── context-menu.js    # Selection context menu registration & action routing
-    │   └── ai-orchestrator.js # Direct REST client for Gemini & Groq with streaming & backoff
+    │   ├── service-worker.js  # MV3 Service Worker lifecycle & IPC router
+    │   ├── state-manager.js   # Human-in-the-Loop agent state machine
+    │   ├── safety-guardrails.js # G1-G4 deterministic safety rail engine
+    │   ├── context-menu.js    # Selection context menu registration & router
+    │   └── ai-orchestrator.js # Direct REST client for Gemini & Groq fallback
     ├── content/
-    │   ├── readability.js     # Bundled Mozilla Readability + isProbablyReaderable
-    │   ├── extractor.js       # Cloned DOM content extraction & paywall/SPA defenses
-    │   ├── youtube.js         # YouTube video perception, chapters, transcripts & seeking
-    │   ├── scanner.js         # DOM interactive element scanner, quarantine & action map
-    │   └── overlay.js         # Closed Shadow DOM numbered badges & amber find glow pulse
+    │   ├── readability.js     # Bundled Mozilla Readability
+    │   ├── extractor.js       # Cloned DOM content extraction & defenses
+    │   ├── youtube.js         # YouTube chapters, transcripts & seeking
+    │   ├── scanner.js         # Interactive element scanner & quarantine
+    │   ├── overlay.js         # Closed Shadow DOM badges & amber glow pulse
+    │   └── executor.js        # Synthetic DOM event execution engine
     ├── shared/
-    │   ├── constants.js       # Storage keys, models, IPC message types & defaults
-    │   └── types.js           # Structured IPC message payload schemas
+    │   ├── constants.js       # Storage keys, models, IPC types & skills
+    │   ├── types.js           # Structured IPC request/response schemas
+    │   └── env.example.js     # Local development environment template
     └── sidepanel/
-        ├── index.html         # Side panel UI layout (Summary, Chat, Agent, Settings)
+        ├── index.html         # 6-Tab Side Panel layout (Summary, Chat, Agent, Skills, Profile, Settings)
         ├── sidepanel.css      # Dark mode design system & micro-animations
-        ├── sidepanel.js       # Side panel controller & preferences manager
-        ├── components/
-        │   ├── summary-view.js # Article summarizer view, streaming renderer & clipboard
-        │   ├── chat-view.js    # Grounded page chat view, multimodal vision & cropping
-        │   └── agent-view.js   # Interactive element scanner view, metrics & highlight controls
-        └── lib/
-            └── readability.js # Readability module for sidepanel operations
+        ├── sidepanel.js       # Side panel controller & tab router
+        └── components/
+            ├── summary-view.js # Article summarizer view & clipboard controls
+            ├── chat-view.js    # Grounded page chat, vision cropping & chips
+            ├── agent-view.js   # Element scanner, HITL proposal card & kill switch
+            ├── profile-view.js # Local user profile memory & autofill manager
+            └── skills-view.js  # Reusable skills engine & JSON import/export
 ```
 
 ---
 
-## 🛠️ Quick Start & Installation
+## 🛠️ Installation & Setup
 
-### Prerequisites
+### Option A: Load Unpacked in Chrome (Recommended for Developers)
 
-* Google Chrome (Version 116+ for Chrome Side Panel API support).
-* A free **Google Gemini API Key** from [Google AI Studio](https://aistudio.google.com/app/apikey).
-
-### Step 1: Clone or Open the Repository
-
-```bash
-git clone https://github.com/kasturimaheshbabu2316-mc/own-web-browser.git
-cd own-web-browser
-```
-
-### Step 2: Load Extension in Chrome
-
-1. Open Google Chrome and navigate to:
-
-   ```text
-   chrome://extensions/
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/kasturimaheshbabu2316-mc/own-web-browser.git
+   cd own-web-browser
    ```
 
-2. Enable the **"Developer mode"** toggle in the top-right corner.
-3. Click the **"Load unpacked"** button in the top-left corner.
-4. Select the project folder (`Own AI Browser`).
+2. **Open Chrome Extensions**:
+   Navigate to `chrome://extensions/` in Google Chrome.
 
-### Step 3: Configure Your API Key
+3. **Enable Developer Mode**:
+   Toggle the **Developer mode** switch in the top-right corner.
 
-1. Click the puzzle icon (🧩) in Chrome's toolbar and open **Sahayak - AI Browser Assistant**.
-2. Go to the **Settings** tab.
-3. Paste your free Gemini API Key and click **Save Settings** (or click **Test Connection** to verify live latency).
-4. You are ready! Navigate to any article and click **"Summarize Page"**, or open the **Chat** tab to converse with the page.
+4. **Load Unpacked**:
+   Click **Load unpacked** in the top-left corner and select the project folder (`Own AI Browser`).
 
----
-
-## Privacy and Security Guarantee
-
-* **100% Local-First Storage**: API keys and preferences are stored exclusively on your device using `chrome.storage.local`.
-* **Zero Middleman Servers**: Requests go directly from your browser to Google's official Gemini endpoint. There is no telemetry, tracking, or proxy server.
-* **No Secret Leaks**: `.env` and local configuration files are ignored by Git and never committed to source control.
+5. **Configure API Key**:
+   * Click the Sahayak icon in the Chrome toolbar to open the Side Panel.
+   * Switch to the **Settings** tab.
+   * Paste your free [Google Gemini API Key](https://aistudio.google.com/app/apikey).
+   * *(Optional)* Paste a [Groq API Key](https://console.groq.com) for zero-downtime free-tier failover.
+   * Click **Save Settings** (or **Test Connection** to measure live latency).
 
 ---
 
-## 🗺️ Roadmap & Phase Tracker
+### Option B: Install from Release ZIP Package
 
-| Phase | Focus Area | Status | Deliverables |
-| :--- | :--- | :---: | :--- |
-| **Phase 1** | **The Eyes: Read & Extract** | 🟢 Complete | MV3 Shell, Gemini Streaming, Cloned Readability, YouTube Timestamps, Hinglish Toggle |
-| **Phase 2** | **The Brain: Ground & Understand** | 🟡 In Progress | Grounded Page Chat (Done), Context Menus (Done), Screenshot-and-Ask, Groq Fallback |
-| **Phase 3** | **The Hands: Approved Actions** | ⚪ Planned | Element Scanner, Numbered Badges, Proposal Cards, Human Confirmation Guard |
-| **Phase 4** | **The Agent: Multi-Step Memory** | ⚪ Planned | Plan DAG Engine, Self-Correction Loop, User Profiling, Voice Input |
+1. Download the latest `sahayak-ai-browser-v1.0.0.zip` from [Releases](https://github.com/kasturimaheshbabu2316-mc/own-web-browser/releases).
+2. Extract the ZIP into a local folder.
+3. Open `chrome://extensions/`, enable **Developer mode**, click **Load unpacked**, and select the extracted folder.
 
 ---
 
-## 📚 Detailed Documentation
+## 🧪 Safe Practice Testbed
 
-For in-depth technical specifications, please consult the documentation directory:
+Sahayak includes a local sandbox form for practicing browser automation with zero risk:
 
-* 📄 [`doc/ProblemStatement.md`](doc/ProblemStatement.md) — Comprehensive technical challenge and solution design.
-* 🏛️ [`doc/architecture.md`](doc/architecture.md) — IPC protocols, message types, state machine, and threat analysis.
-* 📋 [`doc/implementation-plan.md`](doc/implementation-plan.md) — Detailed slice-by-slice roadmap.
-* 🛡️ [`doc/edge-case.md`](doc/edge-case.md) — Comprehensive engineering catalog of 16+ edge cases and deterministic defenses.
+1. Open the Side Panel and click **Agent** tab.
+2. Click **Practice Form** in the top banner (or open `assets/practice/internship-form.html`).
+3. Click **Profile** tab, click **⚡ Demo Data**, and click **Save Profile**.
+4. Return to **Agent** tab, click the **Fill from profile** chip, and click **Start Errand**.
+5. Approve each proposal step-by-step to watch Sahayak fill the form safely with your approval!
+
+---
+
+## 🔒 Privacy and Security Guarantee
+
+* **100% Local-First Storage**: User profiles, custom skills, and API credentials reside strictly in `chrome.storage.local` on your physical machine.
+* **Direct REST API Calls**: No intermediary backend servers or proxy services. Browser requests travel directly from Chrome to Google's official Gemini endpoint.
+* **Deterministic Guardrails**: Financial domains (HDFC, SBI, PayPal, Stripe, etc.) and credential fields (passwords, OTPs, CVVs) are blocked at the code level, completely independent of model judgment.
+* **Human Approval Gate**: Zero DOM clicks or typing occur without explicit user confirmation.
+
+---
+
+## 🗺️ Roadmap & Verification Matrix
+
+All 4 Phases (17 Slices) are **100% complete and verified**:
+
+| Verification Target | Expected Behavior | Status |
+| :--- | :--- | :---: |
+| **Clean Installation** | Unpacks without manifest or permission warnings in Chrome | ✅ Passed |
+| **API Credential Security** | Stored in `chrome.storage.local`; omitted from source/repo | ✅ Passed |
+| **Article Summarization** | Outputs TL;DR, 5 points, next steps from Readability.js | ✅ Passed |
+| **YouTube Navigation** | Generates chapter breakdown with functional timestamp seeking | ✅ Passed |
+| **Bilingual Toggle** | Seamlessly alternates between English and colloquial Hinglish | ✅ Passed |
+| **Grounded Page Chat** | Answers strictly from page context; declines ungrounded queries | ✅ Passed |
+| **Context Menu Actions** | Right-click triggers Explain, Translate, and Draft Reply | ✅ Passed |
+| **Multimodal Vision** | Captures tab and correctly analyzes visual diagrams/charts | ✅ Passed |
+| **Rate-Limit Resilience** | Retries with backoff and fails over to Groq free tier on 429 | ✅ Passed |
+| **DOM Scanner & Badges** | Assigns stable numbers in closed Shadow DOM overlay | ✅ Passed |
+| **Find It For Me** | Natural language query scrolls to and highlights target element | ✅ Passed |
+| **Human-in-the-Loop Loop** | No DOM action occurs without user clicking "Approve" | ✅ Passed |
+| **Safety Guardrails** | Blocks banking domains, password fields, and OTP inputs | ✅ Passed |
+| **Consequential Action Gate** | Requires secondary confirmation for Submit/Pay buttons | ✅ Passed |
+| **Profile Autofill** | Reuses local profile data to complete practice application | ✅ Passed |
+| **Skills Management** | Built-in skills run in 1 click; custom skills export/import | ✅ Passed |
+| **Release Packaging** | Clean distribution ZIP with automated packaging script | ✅ Passed |
 
 ---
 
 ## 📄 License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is open-source software licensed under the [MIT License](LICENSE).

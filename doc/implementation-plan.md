@@ -461,10 +461,10 @@ Equip Sahayak with persistent local user profile memory, one-click reusable prom
 
 - [x] Local user profile safely persists and pre-populates form errands.
 - [x] Built-in and custom skills run in one click and export/import cleanly.
-- [ ] Financial domains, password fields, and OTP inputs are deterministically blocked.
-- [ ] Consequential buttons enforce secondary user confirmation.
-- [ ] Distribution ZIP installs cleanly on any desktop Chrome browser.
-- [ ] Complete setup guide, landing page, and documentation ready for GitHub release.
+- [x] Financial domains, password fields, and OTP inputs are deterministically blocked.
+- [x] Consequential buttons enforce secondary user confirmation.
+- [x] Distribution ZIP installs cleanly on any desktop Chrome browser.
+- [x] Complete setup guide, landing page, and documentation ready for GitHub release.
 
 ---
 
@@ -486,7 +486,8 @@ Before publishing the project, execute this end-to-end verification checklist:
 | **DOM Scanner & Badges** | Assigns stable numbers in closed Shadow DOM overlay | [x] |
 | **Find It For Me** | Natural language query scrolls to and highlights target element | [x] |
 | **Human-in-the-Loop Loop** | No DOM action occurs without user clicking "Approve" | [x] |
-| **Safety Guardrails** | Blocks banking domains, password fields, and OTP inputs | [ ] |
-| **Consequential Action Gate** | Requires secondary confirmation for Submit/Pay buttons | [ ] |
+| **Safety Guardrails** | Blocks banking domains, password fields, and OTP inputs | [x] |
+| **Consequential Action Gate** | Requires secondary confirmation for Submit/Pay buttons | [x] |
 | **Profile Autofill** | Reuses local profile data to complete practice application | [x] |
 | **Skills Management** | Built-in skills run in 1 click; custom skills export/import | [x] |
+| **Release Packaging** | Clean distribution ZIP with automated packaging script | [x] |

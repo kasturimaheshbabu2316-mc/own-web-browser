@@ -305,7 +305,6 @@ body {
   padding: 4px 6px 0;
   gap: 3px;
   overflow-x: auto;
-  scrollbar-width: none;
 }
 
 .nav-tabs::-webkit-scrollbar {
@@ -3725,7 +3724,6 @@ body {
   align-items: center;
   gap: 6px;
   overflow-x: auto;
-  scrollbar-width: none;
   padding-bottom: 2px;
 }
 
@@ -4027,4 +4025,289 @@ body {
   color: var(--text-muted);
   max-width: 280px;
   margin: 0 0 8px 0;
+}
+
+
+/* =============================================================================
+   Phase 4 Slice 4.3 — Deterministic Safety Rails & Guardrail Engine
+   G1: Security Block Banner · G3: Consequential Modal · G4: Emergency Stop Bar
+   ============================================================================= */
+
+/* ---------------------------------------------------------------------------
+   G1 — Security Block Banner
+   High-visibility red warning shown when a restricted domain is detected
+   --------------------------------------------------------------------------- */
+
+.security-block-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin: 8px 0 4px 0;
+  background: linear-gradient(135deg, #3d0000 0%, #5c0a0a 100%);
+  border: 1.5px solid #e53935;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(229, 57, 53, 0.35);
+  animation: securityBlockSlideIn 0.3s ease-out;
+}
+
+@keyframes securityBlockSlideIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.security-block-icon {
+  font-size: 1.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.security-block-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.security-block-title {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ef9a9a;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.security-block-reason {
+  font-size: 0.77rem;
+  color: #ffcdd2;
+  margin: 0;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.security-block-dismiss {
+  background: transparent;
+  border: none;
+  color: #ef9a9a;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0 2px;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.security-block-dismiss:hover {
+  opacity: 1;
+}
+
+/* ---------------------------------------------------------------------------
+   G3 — Consequential Action Modal
+   Red secondary confirmation dialog for high-risk actions
+   --------------------------------------------------------------------------- */
+
+.consequential-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.consequential-modal {
+  background: var(--bg-secondary, #1e1e2e);
+  border: 2px solid #e53935;
+  border-radius: 14px;
+  width: min(360px, calc(100vw - 24px));
+  padding: 0;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(229, 57, 53, 0.4), 0 2px 8px rgba(0,0,0,0.6);
+  animation: modalSlideUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalSlideUp {
+  from { transform: translateY(20px) scale(0.96); opacity: 0; }
+  to   { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.consequential-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 18px 12px;
+  background: linear-gradient(135deg, #4a0000 0%, #6d1111 100%);
+  border-bottom: 1px solid rgba(229, 57, 53, 0.4);
+}
+
+.consequential-modal-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.consequential-modal-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ef9a9a;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.consequential-modal-body {
+  padding: 16px 18px 12px;
+}
+
+.consequential-modal-warning {
+  font-size: 0.82rem;
+  color: var(--text-primary, #e0e0e0);
+  margin: 0 0 12px 0;
+  line-height: 1.5;
+}
+
+.consequential-action-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: rgba(229, 57, 53, 0.08);
+  border: 1px solid rgba(229, 57, 53, 0.2);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.consequential-action-preview .preview-label {
+  font-size: 0.72rem;
+  color: var(--text-muted, #888);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.consequential-action-preview .preview-code {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #ef9a9a;
+  background: transparent;
+}
+
+.consequential-modal-cta {
+  font-size: 0.78rem;
+  color: var(--text-secondary, #b0b0b0);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.consequential-modal-cta em {
+  color: #ef9a9a;
+  font-style: normal;
+  font-size: 0.74rem;
+}
+
+.consequential-modal-footer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 18px 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.consequential-modal-footer .btn-secondary {
+  flex: 1;
+  font-size: 0.78rem;
+  padding: 8px 10px;
+}
+
+.consequential-modal-footer .btn-danger {
+  flex: 1;
+  font-size: 0.78rem;
+  padding: 8px 10px;
+  background: #c62828;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.consequential-modal-footer .btn-danger:hover {
+  background: #b71c1c;
+}
+
+/* ---------------------------------------------------------------------------
+   G4 — Emergency Stop Bar
+   Sticky red bar shown during any active agent task; triggered by Esc or click
+   --------------------------------------------------------------------------- */
+
+.emergency-stop-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  background: linear-gradient(90deg, rgba(183,28,28,0.15) 0%, rgba(198,40,40,0.10) 100%);
+  border-bottom: 1.5px solid rgba(229, 57, 53, 0.5);
+  animation: emergencyBarSlide 0.25s ease-out;
+}
+
+@keyframes emergencyBarSlide {
+  from { opacity: 0; max-height: 0; }
+  to   { opacity: 1; max-height: 60px; }
+}
+
+.emergency-stop-bar.hidden {
+  display: none;
+}
+
+.btn-emergency-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  background: #c62828;
+  color: #fff;
+  border: 1.5px solid #e53935;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.01em;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+  box-shadow: 0 2px 8px rgba(229, 57, 53, 0.3);
+}
+
+.btn-emergency-stop:hover {
+  background: #b71c1c;
+  box-shadow: 0 3px 14px rgba(229, 57, 53, 0.5);
+  transform: scale(1.02);
+}
+
+.btn-emergency-stop:active {
+  transform: scale(0.98);
+}
+
+.btn-emergency-stop svg {
+  flex-shrink: 0;
+}
+
+.emergency-stop-kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  background: rgba(255,255,255,0.18);
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  vertical-align: middle;
 }

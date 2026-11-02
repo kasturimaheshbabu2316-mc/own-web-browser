@@ -6,7 +6,8 @@ import { STORAGE_KEYS, DEFAULT_CONFIG, GROQ_CONFIG, IPC_MESSAGES } from '../shar
 import { generateContent, streamGenerateContent, findInteractiveElement } from './ai-orchestrator.js';
 import { setupContextMenus, handleContextMenuClick } from './context-menu.js';
 import { stateManager } from './state-manager.js';
-import { DEV_CONFIG } from '../shared/env.js';
+// Phase 4 Slice 4.3 — Safety Guardrail Engine
+import { checkDomainRestriction } from './safety-guardrails.js';
 
 // Configure Chrome Side Panel to open automatically when extension action icon is clicked
 chrome.runtime.onInstalled.addListener(async (details) => {
@@ -34,8 +35,16 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     ]);
 
     const defaultsToSet = {};
-    if (!existing[STORAGE_KEYS.GEMINI_API_KEY] && DEV_CONFIG && DEV_CONFIG.GEMINI_API_KEY) {
-      defaultsToSet[STORAGE_KEYS.GEMINI_API_KEY] = DEV_CONFIG.GEMINI_API_KEY.trim();
+    if (!existing[STORAGE_KEYS.GEMINI_API_KEY]) {
+      // Gracefully load local development key if src/shared/env.js is present (omitted in public distribution)
+      try {
+        const envMod = await import('../shared/env.js');
+        if (envMod?.DEV_CONFIG?.GEMINI_API_KEY) {
+          defaultsToSet[STORAGE_KEYS.GEMINI_API_KEY] = envMod.DEV_CONFIG.GEMINI_API_KEY.trim();
+        }
+      } catch (_) {
+        // env.js omitted in clean clones / release packages; user configures keys via Settings UI
+      }
     }
     if (!existing[STORAGE_KEYS.DEFAULT_MODEL]) {
       defaultsToSet[STORAGE_KEYS.DEFAULT_MODEL] = DEFAULT_CONFIG.MODEL;
@@ -167,6 +176,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.storage.local.set({ [STORAGE_KEYS.SAVED_SKILLS]: message.skills }, () => {
       sendResponse({ success: true });
     });
+    return true;
+  }
+
+  // Phase 4 Slice 4.3: Safety Guardrails — Domain restriction pre-flight check
+  if (message.type === IPC_MESSAGES.CHECK_DOMAIN_SAFETY) {
+    const check = checkDomainRestriction(message.url || '');
+    sendResponse({ success: true, blocked: check.blocked, reason: check.reason });
+    return true;
+  }
+
+  // Phase 4 Slice 4.3: Emergency Stop — halt running task immediately
+  if (message.type === IPC_MESSAGES.EMERGENCY_STOP) {
+    stateManager.stopTask()
+      .then(result => sendResponse(result))
+      .catch(err => sendResponse({ success: false, error: err.message }));
     return true;
   }
 

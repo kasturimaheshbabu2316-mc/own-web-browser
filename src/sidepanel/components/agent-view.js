@@ -7,6 +7,10 @@
  * - Renders sequential numbered action map cards (#1, #2, #3...)
  * - Visual Numbered Badges in closed Shadow DOM overlay (Slice 3.2)
  * - "Find It For Me" AI natural language element locator with amber glowing pulse (Slice 3.3)
+ * - Phase 4 Slice 4.3: Safety Guardrails integration
+ *   · G1 Domain blacklist pre-flight check before errand start
+ *   · G3 Consequential action secondary confirmation modal
+ *   · G4 Emergency Stop button + Esc key kill switch
  */
 
 import { IPC_MESSAGES, DEFAULT_CONFIG, STORAGE_KEYS, AGENT_STATES } from '../../shared/constants.js';
@@ -150,6 +154,8 @@ export class AgentView {
       errandChipsRow: this.container.querySelector('#errand-chips-row'),
       chkDryRun: this.container.querySelector('#chk-errand-dry-run'),
       selectMaxSteps: this.container.querySelector('#select-errand-max-steps'),
+      // Phase 4 Slice 4.3 — G4 Emergency Stop button
+      btnEmergencyStop: this.container.querySelector('#btn-emergency-stop'),
 
       // Action Proposal Card references (Slice 3.4)
       actionProposalCard: this.container.querySelector('#action-proposal-card'),
@@ -378,6 +384,14 @@ export class AgentView {
       this.dom.btnStopErrandTop.addEventListener('click', () => this.stopErrand());
     }
 
+    // Phase 4 Slice 4.3 — G4: Sticky Emergency Stop button
+    if (this.dom.btnEmergencyStop) {
+      this.dom.btnEmergencyStop.addEventListener('click', () => {
+        this.stopErrand();
+        this.showAlert('🛑 Emergency Stop activated. All actions halted.', 'warning');
+      });
+    }
+
     if (this.dom.btnResetCompleted) {
       this.dom.btnResetCompleted.addEventListener('click', () => this.resetErrand());
     }
@@ -414,17 +428,31 @@ export class AgentView {
     }
 
     // Keyboard shortcut for single-step approval when in AWAITING_APPROVAL
+    // Phase 4 Slice 4.3 — G4: Esc key Kill Switch — halts task immediately during any active state
     window.addEventListener('keydown', (e) => {
+      // G4 Kill Switch: Esc halts the running task entirely (not just skips step)
+      if (e.key === 'Escape' && !document.querySelector('#sahayak-consequential-modal')) {
+        const status = this.state.taskState?.status;
+        const isActive =
+          status === AGENT_STATES.AWAITING_APPROVAL ||
+          status === AGENT_STATES.SCANNING ||
+          status === AGENT_STATES.EXECUTING;
+        if (isActive && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) {
+          e.preventDefault();
+          this.stopErrand();
+          this.showAlert('🛑 Emergency Stop: Errand halted by Esc key.', 'warning');
+          return;
+        }
+      }
+
       if (
         this.state.taskState?.status === AGENT_STATES.AWAITING_APPROVAL &&
-        !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)
+        !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName) &&
+        !document.querySelector('#sahayak-consequential-modal')
       ) {
         if (e.key === 'Enter') {
           e.preventDefault();
           this.approveProposal();
-        } else if (e.key === 'Escape') {
-          e.preventDefault();
-          this.skipProposal();
         }
       }
     });
@@ -482,6 +510,24 @@ export class AgentView {
         return;
       }
 
+      // -----------------------------------------------------------------------
+      // Phase 4 Slice 4.3 — Guardrail 1: Domain Safety Pre-flight Check
+      // The check runs in the background worker which has access to full URL.
+      // -----------------------------------------------------------------------
+      try {
+        const safetyResponse = await chrome.runtime.sendMessage({
+          type: IPC_MESSAGES.CHECK_DOMAIN_SAFETY,
+          url: tab.url || ''
+        });
+        if (safetyResponse && safetyResponse.blocked) {
+          this.showSecurityBlock(safetyResponse.reason || 'This domain is restricted for security reasons.');
+          return;
+        }
+      } catch (_) {
+        // Non-fatal: proceed if safety check IPC fails
+      }
+      // -----------------------------------------------------------------------
+
       const dryRun = Boolean(this.dom.chkDryRun?.checked);
       const maxSteps = parseInt(this.dom.selectMaxSteps?.value || '10', 10);
 
@@ -512,6 +558,12 @@ export class AgentView {
       });
 
       if (!response || !response.success) {
+        // Guardrail block returned from background (G1 / G2)
+        if (response && response.guardrailBlock) {
+          this.showSecurityBlock(response.error || 'Blocked by safety guardrail.');
+          this.updateTaskUI({ status: AGENT_STATES.IDLE, goal: '', proposedAction: null, history: [] });
+          return;
+        }
         throw new Error(response?.error || 'Failed to start errand.');
       }
 
@@ -530,11 +582,136 @@ export class AgentView {
   }
 
   /**
+   * Displays a high-visibility security block banner (Guardrail 1).
+   * @param {string} reason
+   */
+  showSecurityBlock(reason) {
+    // Remove any existing security block banner
+    const existing = this.container.querySelector('.security-block-banner');
+    if (existing) existing.remove();
+
+    const banner = document.createElement('div');
+    banner.className = 'security-block-banner';
+    banner.setAttribute('role', 'alert');
+    banner.innerHTML = `
+      <div class="security-block-icon">🔒</div>
+      <div class="security-block-body">
+        <strong class="security-block-title">Security Block</strong>
+        <p class="security-block-reason">${this.escapeHTML(reason)}</p>
+      </div>
+      <button type="button" class="security-block-dismiss" aria-label="Dismiss security warning">✕</button>
+    `;
+
+    // Insert before errand section or at top of agent view
+    const errandSection = this.dom.errandSection || this.container.firstElementChild;
+    if (errandSection && errandSection.parentNode) {
+      errandSection.parentNode.insertBefore(banner, errandSection);
+    } else {
+      this.container.prepend(banner);
+    }
+
+    // Dismiss button
+    banner.querySelector('.security-block-dismiss')?.addEventListener('click', () => banner.remove());
+
+    // Auto-dismiss after 10s
+    setTimeout(() => banner.isConnected && banner.remove(), 10000);
+  }
+
+  /**
+   * Shows the G3 Consequential Action confirmation modal.
+   * Resolves true if user confirms, false if user cancels.
+   * @param {string} warningMessage
+   * @param {object} proposal
+   * @returns {Promise<boolean>}
+   */
+  showConsequentialModal(warningMessage, proposal) {
+    return new Promise((resolve) => {
+      // Remove existing modal if any
+      const existing = document.querySelector('#sahayak-consequential-modal');
+      if (existing) existing.remove();
+
+      const modal = document.createElement('div');
+      modal.id = 'sahayak-consequential-modal';
+      modal.className = 'consequential-modal-overlay';
+      modal.setAttribute('role', 'dialog');
+      modal.setAttribute('aria-modal', 'true');
+      modal.setAttribute('aria-labelledby', 'consequential-modal-title');
+      modal.innerHTML = `
+        <div class="consequential-modal">
+          <div class="consequential-modal-header">
+            <span class="consequential-modal-icon">⚠️</span>
+            <h3 id="consequential-modal-title" class="consequential-modal-title">High-Risk Action Detected</h3>
+          </div>
+          <div class="consequential-modal-body">
+            <p class="consequential-modal-warning">${this.escapeHTML(warningMessage)}</p>
+            <div class="consequential-action-preview">
+              <span class="preview-label">Proposed action:</span>
+              <code class="preview-code">${this.escapeHTML(proposal?.action || 'click')} ${proposal?.targetElementId ? `→ #${proposal.targetElementId}` : ''}</code>
+            </div>
+            <p class="consequential-modal-cta">Are you absolutely sure you want to proceed?<br>
+              <em>This action may submit data, make a payment, or trigger an irreversible change.</em>
+            </p>
+          </div>
+          <div class="consequential-modal-footer">
+            <button type="button" id="consequential-cancel" class="btn btn-secondary">Cancel — Do Not Proceed</button>
+            <button type="button" id="consequential-confirm" class="btn btn-danger">Yes, Proceed Anyway</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+
+      const cleanup = (result) => {
+        modal.remove();
+        resolve(result);
+      };
+
+      modal.querySelector('#consequential-cancel')?.addEventListener('click', () => cleanup(false));
+      modal.querySelector('#consequential-confirm')?.addEventListener('click', () => cleanup(true));
+
+      // Close on overlay backdrop click
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) cleanup(false);
+      });
+
+      // Esc key closes modal (cancels)
+      const escHandler = (e) => {
+        if (e.key === 'Escape') {
+          document.removeEventListener('keydown', escHandler);
+          cleanup(false);
+        }
+      };
+      document.addEventListener('keydown', escHandler);
+
+      // Focus cancel button for accessibility
+      setTimeout(() => modal.querySelector('#consequential-cancel')?.focus(), 50);
+    });
+  }
+
+  /**
    * User approved the proposed action
    * Halting ends; action executes on DOM
+   * Phase 4 Slice 4.3 — G3: Consequential actions trigger secondary confirmation modal
    */
   async approveProposal() {
     try {
+      // -----------------------------------------------------------------------
+      // Guardrail 3 — Consequential Action Secondary Confirmation
+      // -----------------------------------------------------------------------
+      const proposal = this.state.taskState?.proposedAction;
+      if (proposal && proposal.isConsequential) {
+        const warningMsg = proposal.consequentialWarning ||
+          `Clicking "${proposal.targetLabel || 'this element'}" may submit data, make a payment, or trigger an irreversible action.`;
+        const confirmed = await this.showConsequentialModal(warningMsg, proposal);
+        if (!confirmed) {
+          // User cancelled — skip this step instead
+          this.showAlert('High-risk action cancelled. Skipping this step.', 'info');
+          await this.skipProposal();
+          return;
+        }
+      }
+      // -----------------------------------------------------------------------
+
       if (this.dom.btnApproveProposal) this.dom.btnApproveProposal.disabled = true;
       if (this.dom.btnSkipProposal) this.dom.btnSkipProposal.disabled = true;
       if (this.dom.btnStopProposal) this.dom.btnStopProposal.disabled = true;
@@ -702,11 +879,21 @@ export class AgentView {
     if (status === AGENT_STATES.IDLE) {
       this.dom.actionProposalCard.classList.add('hidden');
       if (this.dom.errandRunnerCard) this.dom.errandRunnerCard.classList.remove('hidden');
+      // G4: Hide emergency stop bar when idle
+      const emergencyBar = this.container.querySelector('#emergency-stop-bar');
+      if (emergencyBar) emergencyBar.classList.add('hidden');
       return;
     }
 
     // Active task running
     this.dom.actionProposalCard.classList.remove('hidden');
+
+    // G4: Show Emergency Stop bar whenever task is active
+    const emergencyBar = this.container.querySelector('#emergency-stop-bar');
+    if (emergencyBar) {
+      const isActive = [AGENT_STATES.SCANNING, AGENT_STATES.AWAITING_APPROVAL, AGENT_STATES.EXECUTING].includes(status);
+      emergencyBar.classList.toggle('hidden', !isActive);
+    }
     if (this.dom.proposalGoalText) this.dom.proposalGoalText.textContent = goal || 'Browser Errand';
     if (this.dom.proposalStepCounter) this.dom.proposalStepCounter.textContent = `Step ${currentStep} of ${maxSteps}`;
 

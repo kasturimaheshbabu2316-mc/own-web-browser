@@ -162,8 +162,18 @@
       const tagName = el.tagName.toUpperCase();
       const type = (el.getAttribute('type') || (tagName === 'TEXTAREA' ? 'textarea' : (tagName === 'SELECT' ? 'select' : 'text'))).toLowerCase();
 
-      // Protected field quarantine (Slice 4.3): strictly skip password inputs
-      if (type === 'password' || type === 'hidden') continue;
+      // Protected field quarantine (Slice 4.3 Guardrail 2):
+      // Exclude elements with type="password", autocomplete="current-password", autocomplete="one-time-code",
+      // and inputs whose name or ID matches sensitive patterns (OTP, CVV, PIN, SSN, card number, etc.)
+      const autocomplete = (el.getAttribute('autocomplete') || '').toLowerCase();
+      const elName = (el.getAttribute('name') || '').toLowerCase();
+      const elHtmlId = (el.id || '').toLowerCase();
+      const isProtectedAutocomplete = ['current-password', 'new-password', 'one-time-code'].includes(autocomplete);
+      const isProtectedField = /(otp|cvv|cardnumber|card_number|card-number|pin|ssn|passcode|securitycode|authcode|passwd|password)/i.test(`${elName} ${elHtmlId}`);
+
+      if (type === 'password' || type === 'hidden' || isProtectedAutocomplete || isProtectedField) {
+        continue;
+      }
 
       const id = sequentialId++;
       const label = resolveElementLabel(el);
@@ -179,6 +189,9 @@
         id,
         tag: tagName,
         type,
+        name: el.getAttribute('name') || '',
+        htmlId: el.id || '',
+        autocomplete,
         label,
         placeholder,
         isConsequential,
